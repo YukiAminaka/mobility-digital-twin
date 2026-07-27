@@ -8,7 +8,7 @@ terraform {
   }
 
   backend "s3" {
-    bucket       = "terraform-state-mobility-digital-twin-prod"
+    bucket       = "terraform-state-mobility-digital-twin-dev"
     key          = "terraform.tfstate"
     region       = "ap-northeast-1"
     encrypt      = true
