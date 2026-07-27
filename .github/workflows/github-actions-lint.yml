@@ -1,0 +1,21 @@
+name: Static analysis for GitHub Actions
+on:
+  pull_request:
+    paths: [".github/workflows/*.yml", ".github/workflows/*.yaml"]
+defaults: # デフォルトシェル
+  run:
+    shell: bash
+concurrency: # 自動キャンセル
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  actionlint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5 # タイムアウト
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v7
+      - run: | # 静的解析の実行
+          docker run --rm -v "$(pwd):$(pwd)" -w "$(pwd)" rhysd/actionlint:latest
