@@ -17,7 +17,7 @@ resource "aws_lb" "this" {
 }
 
 resource "aws_lb_target_group" "websocket" {
-  name             = "${var.project_name}-${var.environment}-websocket"
+  name             = "${var.project_name}-${var.environment}-ws"
   port             = 8080
   protocol         = "HTTP"
   protocol_version = "HTTP1"
@@ -57,7 +57,7 @@ resource "aws_lb_listener" "https" {
   port              = 443
   protocol          = "HTTPS"
   ssl_policy        = "ELBSecurityPolicy-TLS13-1-2-2021-06"
-  certificate_arn   = aws_acm_certificate.cert.arn
+  certificate_arn   = aws_acm_certificate_validation.cert.certificate_arn
 
   default_action {
     type             = "forward"
@@ -69,17 +69,11 @@ resource "aws_lb_listener" "https" {
 # Certificate
 # ============================================================
 
-# ホストゾーンは作成済みのものを取得する
-data "aws_route53_zone" "main" {
-  name         = var.domain_name
-  private_zone = false
-}
-
 # ap-northeast-1のACM証明書のARNを取得
 resource "aws_acm_certificate" "cert" {
-  domain_name = var.domain_name
+  domain_name = "velotwin.${var.domain_name}"
   subject_alternative_names = [
-    "*.${var.domain_name}"
+    "*.velotwin.${var.domain_name}"
   ]
   validation_method = "DNS"
 
@@ -107,7 +101,7 @@ resource "aws_route53_record" "cert_validation" {
   records         = [each.value.record]
   ttl             = 60
   type            = each.value.type
-  zone_id         = data.aws_route53_zone.main.zone_id
+  zone_id         = var.subdomain_zone_id
 }
 
 # 証明書の検証を行うためのリソース。ACM証明書の検証が完了するまで待機する。
