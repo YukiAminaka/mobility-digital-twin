@@ -25,5 +25,5 @@ variable "vpc_cidr" {
 variable "domain_name" {
   description = "Domain name for SSL certificate"
   type        = string
-  default     = "*.ami-works.com"
+  default     = "ami-works.com"
 }
