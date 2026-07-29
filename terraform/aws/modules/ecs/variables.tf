@@ -26,3 +26,18 @@ variable "alb_security_group_id" {
 variable "ecr_repositories" {
   type = map(string)
 }
+
+variable "websocket_image_tag" {
+  description = "Immutable image tag for the WebSocket application"
+  type        = string
+}
+
+variable "kinesis_stream_arn" {
+  description = "ARN of the Kinesis data stream consumed by the application"
+  type        = string
+}
+
+variable "kinesis_stream_name" {
+  description = "Name of the Kinesis data stream consumed by the application"
+  type        = string
+}

@@ -37,10 +37,8 @@ module "network" {
 }
 
 module "route53" {
-  source       = "../../modules/route53"
-  project_name = var.project_name
-  environment  = var.environment
-  domain_name  = var.domain_name
+  source      = "../../modules/route53"
+  domain_name = var.domain_name
 }
 
 module "alb" {
@@ -70,6 +68,28 @@ module "ecs" {
   alb_target_group_arns = module.alb.target_group_arns
   alb_security_group_id = module.alb.alb_security_group_id
   ecr_repositories      = module.ecr.repository_urls
+  websocket_image_tag   = var.websocket_image_tag
+  kinesis_stream_arn    = module.kinesis_device_data.arn
+  kinesis_stream_name   = module.kinesis_device_data.name
+}
+
+module "kinesis_device_data" {
+  project_name = var.project_name
+  environment  = var.environment
+  source       = "../../modules/kinesis_data_streams"
+
+  retention_period = 24
+  stream_mode      = "ON_DEMAND"
+}
+
+module "soracom_funnel_iam" {
+  project_name = var.project_name
+  environment  = var.environment
+  source       = "../../modules/soracom_funnel_iam"
+
+  kinesis_stream_arn     = module.kinesis_device_data.arn
+  external_id            = var.soracom_external_id
+  soracom_aws_account_id = var.soracom_aws_account_id
 }
 
 # ============================================================
