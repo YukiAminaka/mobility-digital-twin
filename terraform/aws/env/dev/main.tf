@@ -72,6 +72,8 @@ module "ecs" {
   websocket_image_tag   = var.websocket_image_tag
   kinesis_stream_arn    = module.kinesis_device_data.arn
   kinesis_stream_name   = module.kinesis_device_data.name
+
+  depends_on = [module.alb]
 }
 
 module "kinesis_device_data" {
