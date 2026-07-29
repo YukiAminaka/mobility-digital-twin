@@ -39,11 +39,12 @@ module "network" {
 module "route53" {
   source      = "../../modules/route53"
   domain_name = var.domain_name
+  subdomain_domain_name = var.subdomain_domain_name
 }
 
 module "alb" {
   source            = "../../modules/alb"
-  domain_name       = var.domain_name
+  subdomain_domain_name = var.subdomain_domain_name
   subdomain_zone_id = module.route53.subdomain_zone_id
   project_name      = var.project_name
   environment       = var.environment

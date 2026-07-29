@@ -71,9 +71,9 @@ resource "aws_lb_listener" "https" {
 
 # ap-northeast-1のACM証明書のARNを取得
 resource "aws_acm_certificate" "cert" {
-  domain_name = "velotwin.${var.domain_name}"
+  domain_name = var.subdomain_domain_name
   subject_alternative_names = [
-    "*.velotwin.${var.domain_name}"
+    "*.${var.subdomain_domain_name}"
   ]
   validation_method = "DNS"
 
@@ -120,7 +120,7 @@ resource "aws_acm_certificate_validation" "cert" {
 # ALBにトラフィックをルーティングするためのRoute53のエイリアスレコードを作成
 resource "aws_route53_record" "alb_alias" {
   zone_id = var.subdomain_zone_id
-  name    = "www.velotwin.${var.domain_name}"
+  name    = "www.${var.subdomain_domain_name}"
   type    = "A"
 
   alias {

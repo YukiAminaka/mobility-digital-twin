@@ -6,7 +6,7 @@ data "aws_route53_zone" "main" {
 
 # サブドメインのホストゾーンを作成する
 resource "aws_route53_zone" "velo_twin" {
-  name = "velotwin.${var.domain_name}"
+  name = var.subdomain_domain_name
 }
 
 resource "aws_route53_record" "ns_record_for_subdomain" {

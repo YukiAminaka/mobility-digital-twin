@@ -28,6 +28,12 @@ variable "domain_name" {
   default     = "ami-works.com"
 }
 
+variable "subdomain_domain_name" {
+  description = "Subdomain domain name"
+  type        = string
+  default     = "velotwin.ami-works.com"
+}
+
 variable "websocket_image_tag" {
   description = "Immutable ECR image tag for the WebSocket application"
   type        = string

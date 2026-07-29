@@ -18,9 +18,9 @@ variable "public_subnet_ids" {
   description = "Public subnet IDs"
 }
 
-variable "domain_name" {
+variable "subdomain_domain_name" {
   type        = string
-  description = "Domain name for SSL certificate"
+  description = "Subdomain domain name"
 }
 
 variable "subdomain_zone_id" {
