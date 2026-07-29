@@ -1,6 +1,6 @@
 resource "aws_kinesis_stream" "device_data" {
   name             = "${var.project_name}-${var.environment}-device-data"
-  retention_period = 24
+  retention_period = var.retention_period
   shard_count      = var.stream_mode == "PROVISIONED" ? var.shard_count : null
 
   stream_mode_details {

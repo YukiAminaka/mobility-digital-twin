@@ -8,6 +8,17 @@ variable "environment" {
   description = "Environment name"
 }
 
+variable "retention_period" {
+  description = "The number of hours for the data records that are stored in shards to remain accessible."
+  type        = number
+  default     = 24
+
+  validation {
+    condition     = var.retention_period >= 24 && var.retention_period <= 8760
+    error_message = "retention_period must be between 24 and 8760 hours."
+  }
+}
+
 variable "stream_mode" {
   description = "Specifies the capacity mode of the stream. Must be either PROVISIONED or ON_DEMAND."
   type        = string
