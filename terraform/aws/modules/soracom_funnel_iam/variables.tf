@@ -8,11 +8,6 @@ variable "environment" {
   description = "Environment name"
 }
 
-variable "role_name" {
-  description = "IAM Role name for SORACOM Funnel"
-  type        = string
-}
-
 variable "kinesis_stream_arn" {
   description = "Kinesis Data Stream ARN to allow writing to"
   type        = string
