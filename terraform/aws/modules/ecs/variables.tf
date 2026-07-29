@@ -30,6 +30,14 @@ variable "ecr_repositories" {
 variable "websocket_image_tag" {
   description = "Immutable image tag for the WebSocket application"
   type        = string
+
+  validation {
+    condition = (
+      length(trimspace(var.websocket_image_tag)) > 0 &&
+      lower(trimspace(var.websocket_image_tag)) != "latest"
+    )
+    error_message = "websocket_image_tag must be a non-empty immutable tag and must not be 'latest'."
+  }
 }
 
 variable "kinesis_stream_arn" {
