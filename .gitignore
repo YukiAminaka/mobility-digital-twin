@@ -1,6 +1,8 @@
 # env files
 .env
 
+# soratun config
+arc.json
 
 ### VisualStudioCode ###
 .vscode/*
