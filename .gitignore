@@ -23,6 +23,10 @@ arc.json
 .history
 .ionide
 
+### Python ###
+__pycache__/
+*.py[cod]
+
 
 ### Terraform ###
 # Local .terraform directories
