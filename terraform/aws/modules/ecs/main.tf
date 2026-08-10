@@ -64,6 +64,12 @@ resource "aws_ecs_service" "websocket" {
     container_name   = "websocket"
     container_port   = 8080
   }
+
+  lifecycle {
+    ignore_changes = [
+      task_definition
+    ]
+  }
 }
 
 # Security Groups
