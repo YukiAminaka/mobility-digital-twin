@@ -29,7 +29,7 @@ data "aws_iam_policy_document" "soracom_funnel_assume_role" {
 resource "aws_iam_role" "soracom_funnel" {
   name = "${var.project_name}-${var.environment}-soracom-funnel-role"
 
-  assume_role_policy = sensitive(data.aws_iam_policy_document.soracom_funnel_assume_role.json) 
+  assume_role_policy = sensitive(data.aws_iam_policy_document.soracom_funnel_assume_role.json)
 
   tags = {
     Name        = "${var.project_name}-${var.environment}-soracom-funnel-role"

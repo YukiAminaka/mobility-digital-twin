@@ -19,7 +19,7 @@ variable "external_id" {
   sensitive   = true
 
   validation {
-    condition     = length(trimspace(var.soracom_external_id)) >= 2
+    condition     = length(trimspace(var.external_id)) >= 2
     error_message = "soracom_external_id must contain at least 2 characters."
   }
 }
