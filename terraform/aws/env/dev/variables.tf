@@ -35,13 +35,11 @@ variable "vpc_cidr" {
 variable "domain_name" {
   description = "Domain name for SSL certificate"
   type        = string
-  default     = "ami-works.com"
 }
 
 variable "subdomain_domain_name" {
   description = "Subdomain domain name"
   type        = string
-  default     = "velotwin.ami-works.com"
 }
 
 variable "websocket_image_tag" {
