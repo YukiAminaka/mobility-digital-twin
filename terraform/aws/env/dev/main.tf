@@ -106,13 +106,13 @@ module "openid_connect_provider" {
 module "github_actions_role" {
   source = "../../modules/github_actions_role"
 
-  project_name                = var.project_name
+  project_name                              = var.project_name
   openid_connect_provider_githubactions_arn = module.openid_connect_provider.arn
-  github_repository           = var.github_repository
-  ecr_repositories_arns       = module.ecr.repository_arns
-  ecs_service_arns            = [module.ecs.websocket_service_arn]
-  ecs_task_execution_role_arn = module.ecs.task_execution_role_arn
-  ecs_task_role_arn           = module.ecs.task_role_arn
+  github_repository                         = var.github_repository
+  ecr_repositories_arns                     = module.ecr.repository_arns
+  ecs_service_arns                          = [module.ecs.websocket_service_arn]
+  ecs_task_execution_role_arn               = module.ecs.task_execution_role_arn
+  ecs_task_role_arn                         = module.ecs.task_role_arn
 }
 
 module "soracom_funnel_iam" {
