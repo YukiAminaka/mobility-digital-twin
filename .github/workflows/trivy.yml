@@ -23,7 +23,6 @@ jobs:
         with:
           scan-type: config # セキュリティ設定ミスの検出
           scan-ref: "." # カレントディレクトリ(リポジトリ全体)をスキャン
-          output: "trivy-iac-results.sarif"
           hide-progress: true # 進捗表示を非表示
           severity: CRITICAL,HIGH # レポート対象の重大度
           exit-code: 1 # 問題発見時の終了ステータス
