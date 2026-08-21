@@ -94,7 +94,7 @@ resource "aws_vpc_security_group_ingress_rule" "websocket_from_alb" {
 }
 
 # ECSタスクからECR/CloudWatch Logs/Secrets Manager/Kinesis Data Streams へのアウトバウンドトラフィックを許可するEgressルール
-# trivy:ignore:AVD-AWS-0104
+# trivy:ignore:AWS-0104
 resource "aws_vpc_security_group_egress_rule" "websocket_https" {
   security_group_id = aws_security_group.websocket.id
   from_port         = 443
