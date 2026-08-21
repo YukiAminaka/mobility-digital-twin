@@ -17,13 +17,11 @@ variable "route53_parent_zone_aws_profile" {
 variable "project_name" {
   description = "Project name"
   type        = string
-  default     = "velotwin"
 }
 
 variable "environment" {
   description = "Environment name"
   type        = string
-  default     = "dev"
 }
 
 variable "vpc_cidr" {
