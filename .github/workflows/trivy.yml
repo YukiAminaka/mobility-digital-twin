@@ -23,14 +23,7 @@ jobs:
         with:
           scan-type: config # セキュリティ設定ミスの検出
           scan-ref: "." # カレントディレクトリ(リポジトリ全体)をスキャン
-          format: "sarif"
           output: "trivy-iac-results.sarif"
           hide-progress: true # 進捗表示を非表示
           severity: CRITICAL,HIGH # レポート対象の重大度
           exit-code: 1 # 問題発見時の終了ステータス
-      - name: Upload Trivy IaC scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd # v4.37.7
-        if: always()
-        with:
-          sarif_file: "trivy-iac-results.sarif"
-          category: "trivy-iac"
