@@ -3,6 +3,11 @@ variable "project_name" {
   description = "Project name"
 }
 
+variable "openid_connect_provider_githubactions_arn" {
+  type        = string
+  description = "ARN of the OpenID Connect provider for GitHub Actions"
+}
+
 variable "github_repository" {
   type        = string
   description = "The GitHub repository in the format 'owner/repo' for which the OIDC provider is being created."

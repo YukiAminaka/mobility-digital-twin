@@ -1,5 +1,6 @@
 # Route53のホストゾーンを取得する
 data "aws_route53_zone" "main" {
+  provider     = aws.route53_parent_zone
   name         = var.domain_name
   private_zone = false
 }
@@ -10,6 +11,8 @@ resource "aws_route53_zone" "velo_twin" {
 }
 
 resource "aws_route53_record" "ns_record_for_subdomain" {
+  provider = aws.route53_parent_zone
+
   name    = aws_route53_zone.velo_twin.name
   zone_id = data.aws_route53_zone.main.zone_id
   records = [

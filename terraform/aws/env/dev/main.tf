@@ -17,7 +17,8 @@ terraform {
 }
 
 provider "aws" {
-  region = var.aws_region
+  region  = var.aws_region
+  profile = var.infrastructure_aws_profile
 
   default_tags {
     tags = {
@@ -26,6 +27,12 @@ provider "aws" {
       ManagedBy   = "Terraform"
     }
   }
+}
+
+provider "aws" {
+  alias   = "route53_parent_zone"
+  region  = var.aws_region
+  profile = var.route53_parent_zone_aws_profile
 }
 
 module "network" {
@@ -37,19 +44,24 @@ module "network" {
 }
 
 module "route53" {
-  source      = "../../modules/route53"
-  domain_name = var.domain_name
+  source                = "../../modules/route53"
+  domain_name           = var.domain_name
   subdomain_domain_name = var.subdomain_domain_name
+
+  providers = {
+    aws                     = aws
+    aws.route53_parent_zone = aws.route53_parent_zone
+  }
 }
 
 module "alb" {
-  source            = "../../modules/alb"
+  source                = "../../modules/alb"
   subdomain_domain_name = var.subdomain_domain_name
-  subdomain_zone_id = module.route53.subdomain_zone_id
-  project_name      = var.project_name
-  environment       = var.environment
-  vpc_id            = module.network.vpc_id
-  public_subnet_ids = module.network.public_subnet_ids
+  subdomain_zone_id     = module.route53.subdomain_zone_id
+  project_name          = var.project_name
+  environment           = var.environment
+  vpc_id                = module.network.vpc_id
+  public_subnet_ids     = module.network.public_subnet_ids
 }
 
 module "ecr" {
@@ -83,6 +95,24 @@ module "kinesis_device_data" {
 
   retention_period = 24
   stream_mode      = "ON_DEMAND"
+}
+
+module "openid_connect_provider" {
+  source = "../../modules/openid_connect_provider"
+
+  project_name = var.project_name
+}
+
+module "github_actions_role" {
+  source = "../../modules/github_actions_role"
+
+  project_name                = var.project_name
+  openid_connect_provider_githubactions_arn = module.openid_connect_provider.arn
+  github_repository           = var.github_repository
+  ecr_repositories_arns       = module.ecr.repository_arns
+  ecs_service_arns            = [module.ecs.websocket_service_arn]
+  ecs_task_execution_role_arn = module.ecs.task_execution_role_arn
+  ecs_task_role_arn           = module.ecs.task_role_arn
 }
 
 module "soracom_funnel_iam" {

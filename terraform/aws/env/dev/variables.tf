@@ -4,6 +4,16 @@ variable "aws_region" {
   default     = "ap-northeast-1"
 }
 
+variable "infrastructure_aws_profile" {
+  description = "AWS CLI profile for the account in which the primary infrastructure, including the delegated subdomain hosted zone, is managed"
+  type        = string
+}
+
+variable "route53_parent_zone_aws_profile" {
+  description = "AWS CLI profile for the account that manages the parent Route 53 hosted zone and its subdomain delegation NS record"
+  type        = string
+}
+
 variable "project_name" {
   description = "Project name"
   type        = string
@@ -49,4 +59,10 @@ variable "soracom_aws_account_id" {
   description = "SORACOM's AWS Account ID"
   type        = string
   default     = "762707677580"
+}
+
+variable "github_repository" {
+  description = "GitHub repository in 'owner/repo' format allowed to assume the GitHub Actions role"
+  type        = string
+  default     = "YukiAminaka/mobility-digital-twin"
 }
