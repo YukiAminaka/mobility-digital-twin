@@ -13,9 +13,9 @@ variable "vpc_id" {
   description = "VPC ID where the ALB will be deployed"
 }
 
-variable "public_subnet_ids" {
+variable "private_subnet_ids" {
   type        = list(string)
-  description = "Public subnet IDs"
+  description = "Private subnet IDs"
 }
 
 variable "subdomain_domain_name" {

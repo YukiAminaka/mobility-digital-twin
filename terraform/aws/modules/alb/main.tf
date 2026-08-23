@@ -4,10 +4,10 @@
 
 resource "aws_lb" "this" {
   name               = "${var.project_name}-${var.environment}-alb"
-  internal           = false #trivy:ignore:AWS-0053 This ALB is intentionally public-facing for frontend access
+  internal           = true
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb.id]
-  subnets            = var.public_subnet_ids
+  subnets            = var.private_subnet_ids
 
   enable_deletion_protection = false
   drop_invalid_header_fields = true
