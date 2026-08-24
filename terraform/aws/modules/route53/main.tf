@@ -5,9 +5,20 @@ data "aws_route53_zone" "main" {
   private_zone = false
 }
 
-# サブドメインのホストゾーンを作成する
+# サブドメインの公開ホストゾーンを作成する(ACMのDNS検証に使用)
 resource "aws_route53_zone" "velo_twin" {
   name = var.subdomain_domain_name
+}
+
+# サブドメインのプライベートホストゾーンを作成する
+# internal ALBのエイリアスレコードなど、VPC内(SSMポートフォワード経由)からのみ
+# 名前解決させたいレコードはこちらに作成する
+resource "aws_route53_zone" "velo_twin_private" {
+  name = var.subdomain_domain_name
+
+  vpc {
+    vpc_id = var.vpc_id
+  }
 }
 
 resource "aws_route53_record" "ns_record_for_subdomain" {
