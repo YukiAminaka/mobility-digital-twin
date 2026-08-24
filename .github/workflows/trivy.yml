@@ -1,0 +1,28 @@
+name: Prevent security misconfigurations
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+concurrency: # 自動キャンセル
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  iac-scan:
+    name: IaC Configuration Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+      - name: Run Trivy vulnerability scanner in IaC mode
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: config # セキュリティ設定ミスの検出
+          scan-ref: "." # カレントディレクトリ(リポジトリ全体)をスキャン
+          hide-progress: true # 進捗表示を非表示
+          severity: CRITICAL,HIGH # レポート対象の重大度
+          exit-code: 1 # 問題発見時の終了ステータス
