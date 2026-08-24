@@ -69,7 +69,7 @@ resource "aws_lb_listener" "https" {
 # Certificate
 # ============================================================
 
-# ap-northeast-1のACM証明書のARNを取得
+# ACMでSSL/TLS証明書を作成
 resource "aws_acm_certificate" "cert" {
   domain_name = var.subdomain_domain_name
   subject_alternative_names = [
@@ -118,8 +118,9 @@ resource "aws_acm_certificate_validation" "cert" {
 # ============================================================
 
 # ALBにトラフィックをルーティングするためのRoute53のエイリアスレコードを作成
+# internal ALBのため、VPCに関連付けたプライベートホストゾーンにのみ作成する
 resource "aws_route53_record" "alb_alias" {
-  zone_id = var.subdomain_zone_id
+  zone_id = var.private_subdomain_zone_id
   name    = "www.${var.subdomain_domain_name}"
   type    = "A"
 
@@ -143,22 +144,22 @@ resource "aws_security_group" "alb" {
   }
 }
 
-# httpの通信を許可するIngressルール
+# httpの通信を許可するIngressルール(internal ALBのためSSM踏み台からのみ許可)
 resource "aws_vpc_security_group_ingress_rule" "alb_http" {
-  security_group_id = aws_security_group.alb.id
-  from_port         = 80
-  to_port           = 80
-  ip_protocol       = "tcp"
-  cidr_ipv4         = "0.0.0.0/0"
+  security_group_id            = aws_security_group.alb.id
+  from_port                    = 80
+  to_port                      = 80
+  ip_protocol                  = "tcp"
+  referenced_security_group_id = var.bastion_security_group_id
 }
 
-# httpsの通信を許可するIngressルール
+# httpsの通信を許可するIngressルール(internal ALBのためSSM踏み台からのみ許可)
 resource "aws_vpc_security_group_ingress_rule" "alb_https" {
-  security_group_id = aws_security_group.alb.id
-  from_port         = 443
-  to_port           = 443
-  ip_protocol       = "tcp"
-  cidr_ipv4         = "0.0.0.0/0"
+  security_group_id            = aws_security_group.alb.id
+  from_port                    = 443
+  to_port                      = 443
+  ip_protocol                  = "tcp"
+  referenced_security_group_id = var.bastion_security_group_id
 }
 
 # ALBのegressルールは循環参照回避のためルートモジュールで定義
