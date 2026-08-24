@@ -121,11 +121,10 @@ module "github_actions_role" {
 module "ssm_bastion" {
   source = "../../modules/ssm_bastion"
 
-  project_name             = var.project_name
-  environment              = var.environment
-  vpc_id                   = module.network.vpc_id
-  subnet_id                = module.network.private_subnet_ids[0]
-  developer_iam_user_names = var.ssm_bastion_developer_iam_user_names
+  project_name = var.project_name
+  environment  = var.environment
+  vpc_id       = module.network.vpc_id
+  subnet_id    = module.network.private_subnet_ids[0]
 }
 
 module "soracom_funnel_iam" {

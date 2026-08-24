@@ -141,10 +141,3 @@ resource "aws_iam_policy" "developer_start_session" {
   name   = "${var.project_name}-${var.environment}-ssm-bastion-start-session"
   policy = data.aws_iam_policy_document.developer_start_session.json
 }
-
-resource "aws_iam_user_policy_attachment" "developer_start_session" {
-  for_each = toset(var.developer_iam_user_names)
-
-  user       = each.value
-  policy_arn = aws_iam_policy.developer_start_session.arn
-}

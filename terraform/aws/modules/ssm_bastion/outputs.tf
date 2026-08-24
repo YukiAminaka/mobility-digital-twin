@@ -9,7 +9,7 @@ output "security_group_id" {
 }
 
 output "developer_iam_policy_arn" {
-  description = "ARN of the IAM policy granting permission to start SSM sessions through the forwarding host"
+  description = "ARN of the IAM policy granting permission to start SSM sessions through the forwarding host. Not auto-attached; attach it in the IAM Identity Center console as a customer managed policy (by name) on the relevant permission set"
   value       = aws_iam_policy.developer_start_session.arn
 }
 

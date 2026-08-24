@@ -20,9 +20,3 @@ variable "instance_type" {
   type        = string
   default     = "t4g.nano"
 }
-
-variable "developer_iam_user_names" {
-  description = "IAM user names to grant permission to start SSM sessions through the forwarding host"
-  type        = list(string)
-  default     = []
-}
