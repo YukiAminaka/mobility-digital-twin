@@ -62,3 +62,9 @@ variable "github_repository" {
   type        = string
   default     = "YukiAminaka/mobility-digital-twin"
 }
+
+variable "ssm_bastion_developer_iam_user_names" {
+  description = "IAM user names granted permission to start SSM sessions through the SSM forwarding host"
+  type        = list(string)
+  default     = []
+}

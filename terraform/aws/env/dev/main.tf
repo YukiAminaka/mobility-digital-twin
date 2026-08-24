@@ -47,6 +47,7 @@ module "route53" {
   source                = "../../modules/route53"
   domain_name           = var.domain_name
   subdomain_domain_name = var.subdomain_domain_name
+  vpc_id                = module.network.vpc_id
 
   providers = {
     aws                     = aws
@@ -55,13 +56,15 @@ module "route53" {
 }
 
 module "alb" {
-  source                = "../../modules/alb"
-  subdomain_domain_name = var.subdomain_domain_name
-  subdomain_zone_id     = module.route53.subdomain_zone_id
-  project_name          = var.project_name
-  environment           = var.environment
-  vpc_id                = module.network.vpc_id
-  public_subnet_ids     = module.network.public_subnet_ids
+  source                    = "../../modules/alb"
+  subdomain_domain_name     = var.subdomain_domain_name
+  subdomain_zone_id         = module.route53.subdomain_zone_id
+  private_subdomain_zone_id = module.route53.private_subdomain_zone_id
+  bastion_security_group_id = module.ssm_bastion.security_group_id
+  project_name              = var.project_name
+  environment               = var.environment
+  vpc_id                    = module.network.vpc_id
+  private_subnet_ids        = module.network.private_subnet_ids
 }
 
 module "ecr" {
@@ -113,6 +116,16 @@ module "github_actions_role" {
   ecs_service_arns                          = [module.ecs.websocket_service_arn]
   ecs_task_execution_role_arn               = module.ecs.task_execution_role_arn
   ecs_task_role_arn                         = module.ecs.task_role_arn
+}
+
+module "ssm_bastion" {
+  source = "../../modules/ssm_bastion"
+
+  project_name             = var.project_name
+  environment              = var.environment
+  vpc_id                   = module.network.vpc_id
+  subnet_id                = module.network.private_subnet_ids[0]
+  developer_iam_user_names = var.ssm_bastion_developer_iam_user_names
 }
 
 module "soracom_funnel_iam" {
