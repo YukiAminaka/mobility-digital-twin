@@ -59,8 +59,9 @@ class GPSSimulatorTest(unittest.TestCase):
                 "lat": 35.0,
                 "lon": 139.0,
                 "speed": 10.0,
+                "role": -1.456,
+                "pitch": 250.001,
                 "heading": 90.0,
-                "status": "smooth",
             },
         )
         self.assertEqual(second["seq"], 2)

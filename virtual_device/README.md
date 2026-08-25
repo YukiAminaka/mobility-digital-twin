@@ -78,8 +78,9 @@ docker compose down
   "lat": 35.681236,
   "lon": 139.767125,
   "speed": 8.5,
-  "heading": 90.0,
-  "status": "smooth"
+  "role": -1.456,
+  "pitch": 250.001,
+  "heading": 90.0
 }
 ```
 

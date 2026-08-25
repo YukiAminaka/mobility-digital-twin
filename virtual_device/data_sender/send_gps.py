@@ -128,8 +128,9 @@ class GPSSimulator:
             "lat": round(self._latitude, 7),
             "lon": round(self._longitude, 7),
             "speed": self._settings.speed_meters_per_second,
+            "role": -1.456,
+            "pitch": 250.001,
             "heading": round(self._heading, 2),
-            "status": "smooth",
         }
         self._advance_position()
         return sample
