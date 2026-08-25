@@ -1,6 +1,8 @@
 # env files
 .env
 
+# soratun config
+arc.json
 
 ### VisualStudioCode ###
 .vscode/*
@@ -20,6 +22,10 @@
 # Ignore all local history of files
 .history
 .ionide
+
+### Python ###
+__pycache__/
+*.py[cod]
 
 
 ### Terraform ###

@@ -52,7 +52,8 @@ SORACOM Funnel
   "lat": 35.0,
   "lon": 139.0,
   "speed": 8.5,
-  "heading": 90.0,
-  "status": "smooth"
+  "role": -1.456,
+  "pitch": 250.001,
+  "heading": 90.0
 }
 ```

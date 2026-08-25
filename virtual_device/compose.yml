@@ -1,0 +1,59 @@
+services:
+  soratun:
+    build:
+      context: ./soratun
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_ADMIN
+      - MKNOD
+    device_cgroup_rules:
+      - "c 10:200 rwm"
+    volumes:
+      - type: bind
+        source: ./soratun/arc.json
+        target: /run/secrets/arc.json
+        read_only: true
+    command: ["up", "--config", "/run/secrets/arc.json"]
+    restart: unless-stopped
+    stop_grace_period: 10s
+    healthcheck:
+      test: ["CMD-SHELL", "soratun status | grep -q '^interface:'"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  gps-sender:
+    build:
+      context: ./data_sender
+    network_mode: "service:soratun"
+    depends_on:
+      soratun:
+        condition: service_healthy
+    environment:
+      DEVICE_ID: "${DEVICE_ID:-bike-001}"
+      DESTINATION_HOST: "${DESTINATION_HOST:-funnel.soracom.io}"
+      DESTINATION_PORT: "${DESTINATION_PORT:-23080}"
+      SEND_INTERVAL_SECONDS: "${SEND_INTERVAL_SECONDS:-5}"
+      RESPONSE_TIMEOUT_SECONDS: "${RESPONSE_TIMEOUT_SECONDS:-3}"
+      INITIAL_LATITUDE: "${INITIAL_LATITUDE:-35.681236}"
+      INITIAL_LONGITUDE: "${INITIAL_LONGITUDE:-139.767125}"
+      SPEED_METERS_PER_SECOND: "${SPEED_METERS_PER_SECOND:-8.5}"
+      INITIAL_HEADING_DEGREES: "${INITIAL_HEADING_DEGREES:-90}"
+      HEADING_CHANGE_DEGREES_PER_SECOND: "${HEADING_CHANGE_DEGREES_PER_SECOND:-1}"
+    init: true
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"

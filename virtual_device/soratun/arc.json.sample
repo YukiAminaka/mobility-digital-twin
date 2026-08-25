@@ -1,0 +1,16 @@
+{
+  "privateKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+  "publicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+  "simId": "890000xxxxxxxxxxxxx",
+  "logLevel": 2,
+  "enableMetrics": true,
+  "interface": "soratun0",
+  "arcSessionStatus": {
+    "arcServerPeerPublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+    "arcServerEndpoint": "localhost:11010",
+    "arcAllowedIPs": [
+      "100.127.0.0/16"
+    ],
+    "arcClientPeerIpAddress": "127.0.0.1"
+  }
+}
