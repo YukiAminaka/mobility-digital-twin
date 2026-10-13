@@ -2,46 +2,151 @@ package client
 
 import (
 	"context"
-	"log"
+	"sync"
+	"time"
 
 	"github.com/YukiAminaka/mobility-digital-twin/internal/model/riderstate"
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
 )
 
-// 接続しているクライアントを表す構造体
+const (
+	maxPendingRiders = 32
+	pingInterval     = 30 * time.Second
+	pingTimeout      = 5 * time.Second
+	writeTimeout     = 5 * time.Second
+)
+
+// Client は送信専用の接続と、RiderID ごとの最新の送信待ち状態を管理する。
 type Client struct {
-    conn     *websocket.Conn          // clientのコネクション
-    send chan riderstate.RiderState
+	conn    *websocket.Conn
+	mu      sync.Mutex
+	pending []riderstate.RiderState // 送信待ち状態のスライス
+	ready   chan struct{}
+	ctx     context.Context
+	cancel  context.CancelFunc
 }
 
 func NewClient(conn *websocket.Conn) *Client {
-    c := &Client{
-        conn:     conn,
-        send: make(chan riderstate.RiderState),
-    }
-    return c
+	ctx, cancel := context.WithCancel(context.Background())
+	return &Client{
+		conn: conn, ready: make(chan struct{}, 1), ctx: ctx, cancel: cancel,
+	}
 }
 
-func (c *Client) Conn() *websocket.Conn{
-    return c.conn
+// Enqueue は送信待ちリストへの追加を行う。ネットワークI/Oは持っていません。
+// 同一 RiderID の未送信状態は置換し、台数の上限を超える場合は最も古くから待っている RiderID を除く。
+func (c *Client) Enqueue(state riderstate.RiderState) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	// 送信待ち状態のリストを先頭から走査して、引数state(新しいライダーの状態)とRiderIDが一致した要素があれば置換する。
+	for i := range c.pending {
+		if c.pending[i].RiderID == state.RiderID {
+			c.pending[i] = state
+			return
+		}
+	}
+	// 新しい状態を追加する前に、上限を超える場合は先頭の要素を削除して最も古い状態を削除する
+	if len(c.pending) == maxPendingRiders {
+		copy(c.pending, c.pending[1:]) //[A,B,C] -> [B,C,C]
+		c.pending = c.pending[:len(c.pending)-1] // [B,C] ← 末尾に残っていた要素を除去
+	}
+	c.pending = append(c.pending, state)
+	c.notify()
 }
 
-func (c *Client) Send() chan riderstate.RiderState {
-    return c.send
+func (c *Client) notify() {
+	select {
+	case c.ready <- struct{}{}:
+	default:
+	}
 }
 
-func (c *Client) WriteLoop(ctx context.Context) {
-    for {
-        select {
-        case <-ctx.Done():
-            return
-        
-        case state := <-c.send:
-            if err := wsjson.Write(ctx,c.conn, state); err != nil {
-                log.Printf("WebSocket write error: %v", err)
-                return
-            }
-        }
-    }
+func (c *Client) next() (riderstate.RiderState, bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if len(c.pending) == 0 {
+		return riderstate.RiderState{}, false
+	}
+	state := c.pending[0]
+	c.pending[0] = riderstate.RiderState{}
+	c.pending = c.pending[1:]
+	if len(c.pending) > 0 {
+		c.notify()
+	}
+	return state, true
+}
+
+// WriteLoop は接続ごとに一度だけ実行し、受信処理で制御フレームを処理する。
+// クライアントからのアプリケーションメッセージは受け付けない。
+func (c *Client) WriteLoop(ctx context.Context) error {
+	ctx, cancel := context.WithCancel(ctx)
+	stop := context.AfterFunc(c.ctx, cancel)
+	defer stop()
+	// v1.8.15 の CloseRead はデータ受信時の Close 内で自身の終了を待つため、
+	// 読み取りの終了をここで管理する。
+	readDone := make(chan error, 1)
+	readStopped := make(chan struct{})
+	go func() {
+		defer close(readStopped)
+		_, _, err := c.conn.Read(ctx)
+		if err == nil {
+			_ = c.conn.Close(websocket.StatusPolicyViolation, "unexpected data message")
+			err = websocket.CloseError{Code: websocket.StatusPolicyViolation, Reason: "unexpected data message"}
+		}
+		readDone <- err
+	}()
+	defer func() {
+		cancel()
+		<-readStopped
+	}()
+
+	ticker := time.NewTicker(pingInterval)
+	defer ticker.Stop()
+
+	for {
+		if ctx.Err() != nil {
+			return nil
+		}
+
+		select {
+		case <-ctx.Done():
+			return nil
+		case err := <-readDone:
+			return err
+		case <-c.ready:
+			state, ok := c.next()
+			if !ok {
+				continue
+			}
+			writeCtx, writeCancel := context.WithTimeout(ctx, writeTimeout)
+			err := wsjson.Write(writeCtx, c.conn, state)
+			writeCancel()
+			if err != nil {
+				return err
+			}
+		// pingフレームを送信してクライアントの死活監視を行う。pingTimeoutを超えてもpongが返ってこなければ切断する。
+		case <-ticker.C:
+			pingCtx, pingCancel := context.WithTimeout(ctx, pingTimeout)
+			err := c.conn.Ping(pingCtx)
+			pingCancel()
+			if err != nil {
+				return err
+			}
+		}
+	}
+}
+
+// Close はサーバー停止時に呼び出され、closeフレームを送って接続を正常に終了する。
+// ctx がキャンセルされた場合は Close 処理を中断し、Run を強制終了させる。
+func (c *Client) Close(ctx context.Context) {
+	stop := context.AfterFunc(ctx, c.cancel)
+	defer stop()
+	_ = c.conn.Close(websocket.StatusGoingAway, "server shutting down")
+}
+
+// CloseNow はハンドシェイクなしで即座に接続を切断する。
+func (c *Client) CloseNow() {
+	c.cancel()
+	_ = c.conn.CloseNow()
 }

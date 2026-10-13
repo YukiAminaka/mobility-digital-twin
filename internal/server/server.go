@@ -5,7 +5,6 @@ import (
 	"errors"
 	"log"
 	"net/http"
-	"os"
 	"os/signal"
 	"syscall"
 	"time"
@@ -17,96 +16,119 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func handleWebSocket(hub *hub.Hub) gin.HandlerFunc {
+func handleWebSocket(h *hub.Hub) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// シャットダウンフラグが立っていれば、WebSocket接続を拒否
+		// WebSocket接続をシャットダウンしている間にも、HTTPリクエストが来る可能性があるため、ここでチェックする。
+		if h.IsShuttingDown() {
+			c.Status(http.StatusServiceUnavailable) // ステータスコード503を返す
+			return
+		}
+
 		conn, err := websocket.Accept(c.Writer, c.Request, nil)
 		if err != nil {
 			log.Printf("accept failed: %v", err)
 			return
 		}
 
-		client := client.NewClient(conn)
-
-		hub.Register() <- client
-
+		peer := client.NewClient(conn)
+		if !h.Register(peer) {
+			// 冒頭のIsShuttingDown()の判定後にWebSocketの停止が始まった場合でも、ここで接続を拒否する。
+			peer.CloseNow()
+			return
+		}
+		defer h.Unregister(peer)
+		defer peer.CloseNow()
 		log.Println("Client connected")
 
-		ctx := c.Request.Context()
-
-		client.WriteLoop(ctx)
-
-		hub.Unregister() <- client
-
-		conn.Close(
-			websocket.StatusNormalClosure,
-			"",
-		)
-
+		// Hijack 後の寿命は HTTP リクエストではなく Client/Hub が管理する。
+		if err := peer.WriteLoop(context.Background()); err != nil {
+			code := websocket.CloseStatus(err)
+			if code != websocket.StatusNormalClosure && code != websocket.StatusGoingAway {
+				log.Printf("WebSocket error: %v", err)
+			}
+		}
 		log.Println("Client disconnected")
 	}
 }
 
-func generateDummyData(hub *hub.Hub) {
-
+func generateDummyData(ctx context.Context, h *hub.Hub) {
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
-
 	var x float64
-
-	for range ticker.C {
-
-		x++
-
-		state := riderstate.RiderState{
-			RiderID:   "rider-01",
-			Timestamp: time.Now().UnixMilli(),
-			X:         x,
-			Y:         0,
-			Z:         0,
-			Speed:     1,
-			Heading:   90,
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			x++
+			h.Broadcast(riderstate.RiderState{
+				RiderID: "rider-01", Timestamp: time.Now().UnixMilli(),
+				X: x, Speed: 1, Heading: 90,
+			})
 		}
-
-		hub.Broadcast() <- state
 	}
 }
 
-func Run(ctx context.Context) {
-	hub := hub.NewHub()
-	go hub.Run()
-	go generateDummyData(hub)
+func Run(ctx context.Context) error {
+	ctx, stop := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	h := hub.NewHub()
 
 	router := gin.Default()
-	router.GET("/ws", handleWebSocket(hub))
-	log.Println("server started :8080")
+
+	router.GET("/ws", handleWebSocket(h))
 
 	srv := &http.Server{
-		Addr:    ":8080",
-		Handler: router.Handler(),
+		Addr:              ":8080",
+		Handler:           router,
+		ReadHeaderTimeout: 5 * time.Second,
 	}
 
-	// サーバーを起動
+	return serve(ctx, srv, h)
+}
+
+func serve(ctx context.Context, srv *http.Server, h *hub.Hub) error {
+	producerCtx, stopProducer := context.WithCancel(ctx)
+	
+	producerDone := make(chan struct{})
 	go func() {
-		// srv.Shutdownが呼ばれるとhttp.ErrServerClosedを返すのでこれは無視する
-		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Fatalf("listen: %s\n", err)
-		}
+		defer close(producerDone)
+		generateDummyData(producerCtx, h)
 	}()
 
-	// 割り込みシグナルを待ち、5秒のタイムアウトで
-	// サーバーをグレースフルにシャットダウン。
-	quit := make(chan os.Signal, 1)
-	// kill（パラメータなし）はデフォルトでsyscall.SIGTERMを送信
-	// kill -2はsyscall.SIGINT
-	// kill -9はsyscall.SIGKILLですがキャッチできないため追加不要
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
+	serverErr := make(chan error, 1)
+	go func() {
+		serverErr <- srv.ListenAndServe()
+	}()
+	log.Printf("server starting %s", srv.Addr)
+
+	var listenErr error
+	select {
+	case <-ctx.Done():
+	case listenErr = <-serverErr:
+	}
+	stopProducer()
+	<-producerDone
 	log.Println("Shutdown Server ...")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	if err := srv.Shutdown(ctx); err != nil {
-		log.Println("Server Shutdown:", err)
+
+	// まずWebSocketサーバーのシャットダウン
+	wsErr := h.Shutdown(shutdownCtx)
+	// 次にHTTPサーバーのシャットダウン
+	httpErr := srv.Shutdown(shutdownCtx)
+	if httpErr != nil {
+		_ = srv.Close()
+	}
+	if listenErr == nil {
+		listenErr = <-serverErr
+	}
+	if errors.Is(listenErr, http.ErrServerClosed) {
+		listenErr = nil
 	}
 	log.Println("Server exiting")
+	return errors.Join(listenErr, wsErr, httpErr)
 }
