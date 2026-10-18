@@ -105,6 +105,8 @@ func (c *Client) WriteLoop(ctx context.Context) error {
 	defer ticker.Stop()
 
 	for {
+		// selectは実行可能なcaseが複数あるとランダムに選ばれるため、
+		// ctx.Done()と他のcaseが同時に成立した場合でも必ずここで抜けるようにする。
 		if ctx.Err() != nil {
 			return nil
 		}
