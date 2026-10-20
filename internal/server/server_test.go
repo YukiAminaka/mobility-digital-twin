@@ -10,10 +10,9 @@ import (
 	"testing"
 	"time"
 
+	mdtv1 "github.com/YukiAminaka/mobility-digital-twin/gen/mdt/v1"
 	"github.com/YukiAminaka/mobility-digital-twin/internal/model/hub"
-	"github.com/YukiAminaka/mobility-digital-twin/internal/model/riderstate"
 	"github.com/coder/websocket"
-	"github.com/coder/websocket/wsjson"
 	"github.com/gin-gonic/gin"
 )
 
@@ -135,14 +134,13 @@ func TestShutdownDeadlineUnblocksUnresponsiveClient(t *testing.T) {
 			case <-producerCtx.Done():
 				return
 			case <-ticker.C:
-				h.Broadcast(riderstate.RiderState{RiderID: "ready"})
+				h.Broadcast(&mdtv1.RiderState{RiderId: "ready"})
 			}
 		}
 	}()
 	readCtx, readCancel := context.WithTimeout(context.Background(), time.Second)
 	defer readCancel()
-	var state riderstate.RiderState
-	if err := wsjson.Read(readCtx, conn, &state); err != nil {
+	if _, _, err := conn.Read(readCtx); err != nil {
 		t.Fatal(err)
 	}
 	stopProducer()

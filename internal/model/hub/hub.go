@@ -4,8 +4,8 @@ import (
 	"context"
 	"sync"
 
+	mdtv1 "github.com/YukiAminaka/mobility-digital-twin/gen/mdt/v1"
 	"github.com/YukiAminaka/mobility-digital-twin/internal/model/client"
-	"github.com/YukiAminaka/mobility-digital-twin/internal/model/riderstate"
 )
 
 type Hub struct {
@@ -51,7 +51,7 @@ func (h *Hub) Unregister(c *client.Client) {
 	}
 }
 
-func (h *Hub) Broadcast(state riderstate.RiderState) {
+func (h *Hub) Broadcast(state *mdtv1.RiderState) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	if h.stopping {
@@ -83,9 +83,9 @@ func (h *Hub) Shutdown(ctx context.Context) error {
 					c.Close(ctx)
 				}()
 			}
-			closing.Wait() // 全てのクライアントの終了処理が完了するまで待つ
+			closing.Wait()    // 全てのクライアントの終了処理が完了するまで待つ
 			h.sessions.Wait() // 接続ハンドラの後片付けが完了するまで待つ(Unregisterでゴルーチン数のカウンタをデクリメントしている)
-			close(h.done) // doneチャネルをクローズ
+			close(h.done)     // doneチャネルをクローズ
 		}()
 	})
 

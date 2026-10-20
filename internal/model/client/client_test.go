@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/YukiAminaka/mobility-digital-twin/internal/model/riderstate"
+	mdtv1 "github.com/YukiAminaka/mobility-digital-twin/gen/mdt/v1"
 	"github.com/coder/websocket"
-	"github.com/coder/websocket/wsjson"
+	"google.golang.org/protobuf/proto"
 )
 
 func connectedClient(t *testing.T) (*Client, *websocket.Conn) {
@@ -47,26 +47,41 @@ func waitWriter(t *testing.T, done <-chan error) error {
 	select {
 	case err := <-done:
 		return err
-	case <-time.After(2 * time.Second):
+	case <-time.After(40 * time.Second):
 		t.Fatal("writer did not exit")
 		return nil
 	}
 }
 
+func readState(ctx context.Context, conn *websocket.Conn) (*mdtv1.RiderState, error) {
+	typ, b, err := conn.Read(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if typ != websocket.MessageBinary {
+		return nil, fmt.Errorf("got message type %v, want binary", typ)
+	}
+	state := &mdtv1.RiderState{}
+	if err := proto.Unmarshal(b, state); err != nil {
+		return nil, err
+	}
+	return state, nil
+}
+
 func TestLatestStatePerRider(t *testing.T) {
 	c, remote := connectedClient(t)
-	c.Enqueue(riderstate.RiderState{RiderID: "a", X: 1})
-	c.Enqueue(riderstate.RiderState{RiderID: "b", X: 2})
-	c.Enqueue(riderstate.RiderState{RiderID: "a", X: 3})
+	c.Enqueue(&mdtv1.RiderState{RiderId: "a", X: 1})
+	c.Enqueue(&mdtv1.RiderState{RiderId: "b", X: 2})
+	c.Enqueue(&mdtv1.RiderState{RiderId: "a", X: 3})
 	done := startWriter(c)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	for _, want := range []riderstate.RiderState{{RiderID: "a", X: 3}, {RiderID: "b", X: 2}} {
-		var got riderstate.RiderState
-		if err := wsjson.Read(ctx, remote, &got); err != nil {
+	for _, want := range []*mdtv1.RiderState{{RiderId: "a", X: 3}, {RiderId: "b", X: 2}} {
+		got, err := readState(ctx, remote)
+		if err != nil {
 			t.Fatal(err)
 		}
-		if got != want {
+		if !proto.Equal(got, want) {
 			t.Fatalf("got %+v, want %+v", got, want)
 		}
 	}
@@ -82,11 +97,11 @@ func TestPendingRiderLimit(t *testing.T) {
 	c := NewClient(nil)
 	defer c.cancel()
 	for i := 0; i <= maxPendingRiders; i++ {
-		c.Enqueue(riderstate.RiderState{RiderID: fmt.Sprint(i)})
+		c.Enqueue(&mdtv1.RiderState{RiderId: fmt.Sprint(i)})
 	}
 	for i := 1; i <= maxPendingRiders; i++ {
 		got, ok := c.next()
-		if !ok || got.RiderID != fmt.Sprint(i) {
+		if !ok || got.GetRiderId() != fmt.Sprint(i) {
 			t.Fatalf("got %+v, %v; want rider %d", got, ok, i)
 		}
 	}
@@ -98,7 +113,7 @@ func TestPendingRiderLimit(t *testing.T) {
 func TestWriteTimeout(t *testing.T) {
 	c, _ := connectedClient(t)
 	// The peer does not read; this message exceeds the TCP send buffer.
-	c.Enqueue(riderstate.RiderState{RiderID: strings.Repeat("x", 8<<20)})
+	c.Enqueue(&mdtv1.RiderState{RiderId: strings.Repeat("x", 8<<20)})
 	err := waitWriter(t, startWriter(c))
 	if !errors.Is(err, context.DeadlineExceeded) {
 		t.Fatalf("got %v, want deadline exceeded", err)

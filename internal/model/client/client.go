@@ -5,9 +5,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/YukiAminaka/mobility-digital-twin/internal/model/riderstate"
+	mdtv1 "github.com/YukiAminaka/mobility-digital-twin/gen/mdt/v1"
 	"github.com/coder/websocket"
-	"github.com/coder/websocket/wsjson"
+	"google.golang.org/protobuf/proto"
 )
 
 const (
@@ -21,7 +21,7 @@ const (
 type Client struct {
 	conn    *websocket.Conn
 	mu      sync.Mutex
-	pending []riderstate.RiderState // 送信待ち状態のスライス
+	pending []*mdtv1.RiderState // 送信待ち状態のスライス
 	ready   chan struct{}
 	ctx     context.Context
 	cancel  context.CancelFunc
@@ -36,19 +36,19 @@ func NewClient(conn *websocket.Conn) *Client {
 
 // Enqueue は送信待ちリストへの追加を行う。ネットワークI/Oは持っていません。
 // 同一 RiderID の未送信状態は置換し、台数の上限を超える場合は最も古くから待っている RiderID を除く。
-func (c *Client) Enqueue(state riderstate.RiderState) {
+func (c *Client) Enqueue(state *mdtv1.RiderState) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	// 送信待ち状態のリストを先頭から走査して、引数state(新しいライダーの状態)とRiderIDが一致した要素があれば置換する。
 	for i := range c.pending {
-		if c.pending[i].RiderID == state.RiderID {
+		if c.pending[i].GetRiderId() == state.GetRiderId() {
 			c.pending[i] = state
 			return
 		}
 	}
 	// 新しい状態を追加する前に、上限を超える場合は先頭の要素を削除して最も古い状態を削除する
 	if len(c.pending) == maxPendingRiders {
-		copy(c.pending, c.pending[1:]) //[A,B,C] -> [B,C,C]
+		copy(c.pending, c.pending[1:])           //[A,B,C] -> [B,C,C]
 		c.pending = c.pending[:len(c.pending)-1] // [B,C] ← 末尾に残っていた要素を除去
 	}
 	c.pending = append(c.pending, state)
@@ -62,14 +62,14 @@ func (c *Client) notify() {
 	}
 }
 
-func (c *Client) next() (riderstate.RiderState, bool) {
+func (c *Client) next() (*mdtv1.RiderState, bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if len(c.pending) == 0 {
-		return riderstate.RiderState{}, false
+		return nil, false
 	}
 	state := c.pending[0]
-	c.pending[0] = riderstate.RiderState{}
+	c.pending[0] = nil
 	c.pending = c.pending[1:]
 	if len(c.pending) > 0 {
 		c.notify()
@@ -121,8 +121,12 @@ func (c *Client) WriteLoop(ctx context.Context) error {
 			if !ok {
 				continue
 			}
+			b, err := proto.Marshal(state)
+			if err != nil {
+				return err
+			}
 			writeCtx, writeCancel := context.WithTimeout(ctx, writeTimeout)
-			err := wsjson.Write(writeCtx, c.conn, state)
+			err = c.conn.Write(writeCtx, websocket.MessageBinary, b)
 			writeCancel()
 			if err != nil {
 				return err

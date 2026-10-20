@@ -1,12 +1,12 @@
 # WebSocketサーバー
 
 `github.com/coder/websocket` を使用し、`/ws` に接続した Unity などへ
-自転車の状態を JSON のテキストメッセージとして配信する。
+自転車の状態を Protocol Buffers でシリアライズしたバイナリメッセージとして配信する。
 現在のデータソースは1秒ごとに更新するダミーデータ。
 
 ```text
 generateDummyData(ctx, hub) / 将来の Kinesis Consumer
-                         │ RiderState
+                         │ *mdtv1.RiderState
                          ▼
                   Hub.Broadcast(state)
                          │
@@ -21,20 +21,20 @@ generateDummyData(ctx, hub) / 将来の Kinesis Consumer
 
 ## 配信するデータ
 
-```json
-{
-  "riderId": "rider-01",
-  "timestamp": 1720000000000,
-  "x": 1,
-  "y": 0,
-  "z": 0,
-  "speed": 1,
-  "heading": 90
-}
-```
+1つの WebSocket バイナリメッセージに `mdt.v1.RiderState` を1つ入れる。
+定義は [proto/mdt/v1/rider.proto](../proto/mdt/v1/rider.proto)、Go のコードは
+`buf generate` で `gen/mdt/v1` に生成する。
 
-`timestamp` は Unix ミリ秒。`x,y,z` は Unity 座標を想定しており、
+| フィールド | 型 | 内容 |
+|---|---|---|
+| `rider_id` | `string` | 自転車の識別子。例: `rider-01` |
+| `timestamp` | `int64` | Unix ミリ秒 |
+| `x`, `y`, `z` | `double` | Unity 座標系での位置 |
+| `speed` | `double` | 速度（km/h） |
+| `heading` | `double` | 進行方向（度） |
+
 緯度経度からの座標変換や Kinesis との接続は未実装。
+`Broadcast` した `*mdtv1.RiderState` は全接続で共有するため、渡した後に変更しない。
 
 ## Hub の接続管理
 
@@ -64,7 +64,7 @@ RiderID の状態を破棄して新しい RiderID を追加する。
 
 - 専用の読み取り処理が相手からの Ping・Pong・Close を処理する。
 - サーバーは30秒ごとに Ping を送り、Pong を最大5秒待つ。
-- JSON の書き込みは1回あたり最大5秒で打ち切る。
+- メッセージの書き込みは1回あたり最大5秒で打ち切る。
 - 接続終了や Context の取り消しで書き込みループを終了する。
 
 現在の `/ws` は送信専用。クライアントから通常のデータメッセージを受信すると

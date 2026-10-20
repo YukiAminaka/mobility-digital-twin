@@ -9,9 +9,9 @@ import (
 	"syscall"
 	"time"
 
+	mdtv1 "github.com/YukiAminaka/mobility-digital-twin/gen/mdt/v1"
 	"github.com/YukiAminaka/mobility-digital-twin/internal/model/client"
 	"github.com/YukiAminaka/mobility-digital-twin/internal/model/hub"
-	"github.com/YukiAminaka/mobility-digital-twin/internal/model/riderstate"
 	"github.com/coder/websocket"
 	"github.com/gin-gonic/gin"
 )
@@ -62,9 +62,12 @@ func generateDummyData(ctx context.Context, h *hub.Hub) {
 			return
 		case <-ticker.C:
 			x++
-			h.Broadcast(riderstate.RiderState{
-				RiderID: "rider-01", Timestamp: time.Now().UnixMilli(),
-				X: x, Speed: 1, Heading: 90,
+			h.Broadcast(&mdtv1.RiderState{
+				RiderId:   "rider-01",
+				Timestamp: time.Now().UnixMilli(),
+				X:         x,
+				Speed:     1,
+				Heading:   90,
 			})
 		}
 	}
@@ -91,7 +94,7 @@ func Run(ctx context.Context) error {
 
 func serve(ctx context.Context, srv *http.Server, h *hub.Hub) error {
 	producerCtx, stopProducer := context.WithCancel(ctx)
-	
+
 	producerDone := make(chan struct{})
 	go func() {
 		defer close(producerDone)
