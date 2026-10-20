@@ -25,12 +25,18 @@ type Client struct {
 	ready   chan struct{}
 	ctx     context.Context
 	cancel  context.CancelFunc
+
+	// テストで短い値に差し替えられるよう、タイムアウト値はフィールドで持つ。
+	pingInterval time.Duration
+	pingTimeout  time.Duration
+	writeTimeout time.Duration
 }
 
 func NewClient(conn *websocket.Conn) *Client {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &Client{
 		conn: conn, ready: make(chan struct{}, 1), ctx: ctx, cancel: cancel,
+		pingInterval: pingInterval, pingTimeout: pingTimeout, writeTimeout: writeTimeout,
 	}
 }
 
@@ -101,7 +107,7 @@ func (c *Client) WriteLoop(ctx context.Context) error {
 		<-readStopped
 	}()
 
-	ticker := time.NewTicker(pingInterval)
+	ticker := time.NewTicker(c.pingInterval)
 	defer ticker.Stop()
 
 	for {
@@ -125,7 +131,7 @@ func (c *Client) WriteLoop(ctx context.Context) error {
 			if err != nil {
 				return err
 			}
-			writeCtx, writeCancel := context.WithTimeout(ctx, writeTimeout)
+			writeCtx, writeCancel := context.WithTimeout(ctx, c.writeTimeout)
 			err = c.conn.Write(writeCtx, websocket.MessageBinary, b)
 			writeCancel()
 			if err != nil {
@@ -133,7 +139,7 @@ func (c *Client) WriteLoop(ctx context.Context) error {
 			}
 		// pingフレームを送信してクライアントの死活監視を行う。pingTimeoutを超えてもpongが返ってこなければ切断する。
 		case <-ticker.C:
-			pingCtx, pingCancel := context.WithTimeout(ctx, pingTimeout)
+			pingCtx, pingCancel := context.WithTimeout(ctx, c.pingTimeout)
 			err := c.conn.Ping(pingCtx)
 			pingCancel()
 			if err != nil {

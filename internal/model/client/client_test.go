@@ -47,9 +47,18 @@ func waitWriter(t *testing.T, done <-chan error) error {
 	select {
 	case err := <-done:
 		return err
-	case <-time.After(40 * time.Second):
+	case <-time.After(2 * time.Second):
 		t.Fatal("writer did not exit")
 		return nil
+	}
+}
+
+// assertElapsed は経過時間が want 以上かつ want+tolerance 以下であることを確認する。
+func assertElapsed(t *testing.T, elapsed, want time.Duration) {
+	t.Helper()
+	const tolerance = 500 * time.Millisecond
+	if elapsed < want || elapsed > want+tolerance {
+		t.Fatalf("writer exited after %v, want about %v", elapsed, want)
 	}
 }
 
@@ -112,19 +121,26 @@ func TestPendingRiderLimit(t *testing.T) {
 
 func TestWriteTimeout(t *testing.T) {
 	c, _ := connectedClient(t)
+	c.writeTimeout = 100 * time.Millisecond
 	// The peer does not read; this message exceeds the TCP send buffer.
 	c.Enqueue(&mdtv1.RiderState{RiderId: strings.Repeat("x", 8<<20)})
+	start := time.Now()
 	err := waitWriter(t, startWriter(c))
 	if !errors.Is(err, context.DeadlineExceeded) {
 		t.Fatalf("got %v, want deadline exceeded", err)
 	}
+	assertElapsed(t, time.Since(start), c.writeTimeout)
 }
 
 func TestPingTimeout(t *testing.T) {
 	c, _ := connectedClient(t)
+	c.pingInterval = 100 * time.Millisecond
+	c.pingTimeout = 100 * time.Millisecond
 	// Without a reader the peer cannot respond with Pong.
+	start := time.Now()
 	err := waitWriter(t, startWriter(c))
 	if !errors.Is(err, context.DeadlineExceeded) {
 		t.Fatalf("got %v, want deadline exceeded", err)
 	}
+	assertElapsed(t, time.Since(start), c.pingInterval+c.pingTimeout)
 }
