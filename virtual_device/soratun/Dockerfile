@@ -3,8 +3,12 @@ FROM ubuntu:22.04
 ARG TARGETARCH
 ARG TARGETVARIANT
 
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates curl \
+    && apt-get install -y --no-install-recommends \
+        ca-certificates=20260816ubuntu0.22.04.1 \
+        curl=7.81.0-1ubuntu1.30 \
     && SORATUN_VERSION="1.2.8" \
     && SORATUN_TARGETARCH="${TARGETARCH:-$(dpkg --print-architecture)}" \
     && case "${SORATUN_TARGETARCH}/${TARGETVARIANT}" in \
