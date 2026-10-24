@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package mdt.v1;
+
+// WebSocket でシミュレータへ配信する自転車1台分の状態。
+message RiderState {
+  string rider_id = 1;
+  int64 timestamp = 2; // Unix time (ms)
+  // Unity 座標系での位置。
+  double x = 3;
+  double y = 4;
+  double z = 5;
+  double speed = 6; // km/h
+  double heading = 7; // degrees
+}

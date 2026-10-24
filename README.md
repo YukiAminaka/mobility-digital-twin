@@ -11,7 +11,7 @@ Amazon Kinesis Data Streams
   ↓
 リアルタイム処理サーバ ECS / EC2
   ↓ WebSocket
-シミュレータ / Unreal / Unity
+シミュレータ / Unity + PLATEAU
 ```
 
 ### それぞれの役割
@@ -24,7 +24,7 @@ Kinesis Data Streams
   高頻度な時系列データを一時的に受ける入口
 
 ECS / EC2
-  Kinesisを購読して、順序補正・間引き・JSON変換を行う
+  WebSocketサーバを配置
 
 WebSocketサーバ
   シミュレータ側へリアルタイム配信
@@ -33,14 +33,6 @@ S3
   後から分析するためのログ保存
 ```
 
-最小構成は以下
-
-```text
-SORACOM Funnel
-  → Kinesis Data Streams
-  → ECS Fargate または EC2
-  → WebSocket
-```
 
 ## 送信データの例
 

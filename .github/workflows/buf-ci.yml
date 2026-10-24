@@ -1,0 +1,39 @@
+name: Buf CI
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+    branches: ["main"]
+    paths:
+      - "**.proto"
+      - "**/buf.yaml"
+      - "**/buf.lock"
+      - "buf.gen.yaml"
+      - "gen/**"
+      - ".github/workflows/buf-ci.yml"
+defaults:
+  run:
+    shell: bash
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  buf:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: bufbuild/buf-action@v1 # lint / format / breaking
+        with:
+          version: "1.74.0"
+          push: false
+          archive: false
+      - uses: actions/setup-go@v7 # protoc-gen-go を go tool で実行するため
+        with:
+          go-version-file: go.mod
+      - run: | # 生成コードが最新か確認
+          buf generate
+          git add -N gen/ # 未追跡の生成ファイルも diff の対象にする
+          git diff --exit-code gen/
