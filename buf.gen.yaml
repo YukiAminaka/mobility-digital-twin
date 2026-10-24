@@ -1,4 +1,5 @@
 version: v2
+clean: true # 生成前に出力先を削除し、不要になった生成ファイルを残さない
 managed:
   enabled: true
   override:
