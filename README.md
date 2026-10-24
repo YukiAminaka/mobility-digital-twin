@@ -44,7 +44,6 @@ S3
   "lat": 35.0,
   "lon": 139.0,
   "speed": 8.5,
-  "heading": 90.0,
-  "status": "smooth"
+  "heading": 90.0
 }
 ```
