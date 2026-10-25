@@ -5,10 +5,13 @@ ARG TARGETVARIANT
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
+# Ubuntu のアーカイブは最新リビジョンしか保持しないため、バージョン固定はせず
+# 再現性はベースイメージのタグ固定と soratun の SHA-256 検証で担保する
+# hadolint ignore=DL3008
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        ca-certificates=20260816ubuntu0.22.04.1 \
-        curl=7.81.0-1ubuntu1.30 \
+        ca-certificates \
+        curl \
     && SORATUN_VERSION="1.2.8" \
     && SORATUN_TARGETARCH="${TARGETARCH:-$(dpkg --print-architecture)}" \
     && case "${SORATUN_TARGETARCH}/${TARGETVARIANT}" in \
