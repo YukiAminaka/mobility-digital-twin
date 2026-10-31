@@ -23,15 +23,13 @@ const (
 
 // WebSocket でシミュレータへ配信する自転車1台分の状態。
 type RiderState struct {
-	state     protoimpl.MessageState `protogen:"open.v1"`
-	RiderId   string                 `protobuf:"bytes,1,opt,name=rider_id,json=riderId,proto3" json:"rider_id,omitempty"`
-	Timestamp int64                  `protobuf:"varint,2,opt,name=timestamp,proto3" json:"timestamp,omitempty"` // Unix time (ms)
-	// Unity 座標系での位置。
-	X             float64 `protobuf:"fixed64,3,opt,name=x,proto3" json:"x,omitempty"`
-	Y             float64 `protobuf:"fixed64,4,opt,name=y,proto3" json:"y,omitempty"`
-	Z             float64 `protobuf:"fixed64,5,opt,name=z,proto3" json:"z,omitempty"`
-	Speed         float64 `protobuf:"fixed64,6,opt,name=speed,proto3" json:"speed,omitempty"`     // km/h
-	Heading       float64 `protobuf:"fixed64,7,opt,name=heading,proto3" json:"heading,omitempty"` // degrees
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RiderId       string                 `protobuf:"bytes,1,opt,name=rider_id,json=riderId,proto3" json:"rider_id,omitempty"`
+	Timestamp     int64                  `protobuf:"varint,2,opt,name=timestamp,proto3" json:"timestamp,omitempty"` // Unix time (ms)
+	Latitude      float64                `protobuf:"fixed64,3,opt,name=latitude,proto3" json:"latitude,omitempty"`
+	Longitude     float64                `protobuf:"fixed64,4,opt,name=longitude,proto3" json:"longitude,omitempty"`
+	Speed         float64                `protobuf:"fixed64,5,opt,name=speed,proto3" json:"speed,omitempty"`     // km/h
+	Heading       float64                `protobuf:"fixed64,6,opt,name=heading,proto3" json:"heading,omitempty"` // degrees
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -80,23 +78,16 @@ func (x *RiderState) GetTimestamp() int64 {
 	return 0
 }
 
-func (x *RiderState) GetX() float64 {
+func (x *RiderState) GetLatitude() float64 {
 	if x != nil {
-		return x.X
+		return x.Latitude
 	}
 	return 0
 }
 
-func (x *RiderState) GetY() float64 {
+func (x *RiderState) GetLongitude() float64 {
 	if x != nil {
-		return x.Y
-	}
-	return 0
-}
-
-func (x *RiderState) GetZ() float64 {
-	if x != nil {
-		return x.Z
+		return x.Longitude
 	}
 	return 0
 }
@@ -119,16 +110,15 @@ var File_mdt_v1_rider_proto protoreflect.FileDescriptor
 
 const file_mdt_v1_rider_proto_rawDesc = "" +
 	"\n" +
-	"\x12mdt/v1/rider.proto\x12\x06mdt.v1\"\x9f\x01\n" +
+	"\x12mdt/v1/rider.proto\x12\x06mdt.v1\"\xaf\x01\n" +
 	"\n" +
 	"RiderState\x12\x19\n" +
 	"\brider_id\x18\x01 \x01(\tR\ariderId\x12\x1c\n" +
-	"\ttimestamp\x18\x02 \x01(\x03R\ttimestamp\x12\f\n" +
-	"\x01x\x18\x03 \x01(\x01R\x01x\x12\f\n" +
-	"\x01y\x18\x04 \x01(\x01R\x01y\x12\f\n" +
-	"\x01z\x18\x05 \x01(\x01R\x01z\x12\x14\n" +
-	"\x05speed\x18\x06 \x01(\x01R\x05speed\x12\x18\n" +
-	"\aheading\x18\a \x01(\x01R\aheadingB\x90\x01\n" +
+	"\ttimestamp\x18\x02 \x01(\x03R\ttimestamp\x12\x1a\n" +
+	"\blatitude\x18\x03 \x01(\x01R\blatitude\x12\x1c\n" +
+	"\tlongitude\x18\x04 \x01(\x01R\tlongitude\x12\x14\n" +
+	"\x05speed\x18\x05 \x01(\x01R\x05speed\x12\x18\n" +
+	"\aheading\x18\x06 \x01(\x01R\aheadingB\x90\x01\n" +
 	"\n" +
 	"com.mdt.v1B\n" +
 	"RiderProtoP\x01Z=github.com/YukiAminaka/mobility-digital-twin/gen/mdt/v1;mdtv1\xa2\x02\x03MXX\xaa\x02\x06Mdt.V1\xca\x02\x06Mdt\\V1\xe2\x02\x12Mdt\\V1\\GPBMetadata\xea\x02\aMdt::V1b\x06proto3"

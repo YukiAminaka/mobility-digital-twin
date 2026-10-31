@@ -11,6 +11,7 @@ import (
 	"time"
 
 	mdtv1 "github.com/YukiAminaka/mobility-digital-twin/gen/mdt/v1"
+	"github.com/YukiAminaka/mobility-digital-twin/internal/dummy"
 	"github.com/YukiAminaka/mobility-digital-twin/internal/model/hub"
 	"github.com/coder/websocket"
 	"github.com/gin-gonic/gin"
@@ -157,7 +158,7 @@ func TestShutdownDeadlineUnblocksUnresponsiveClient(t *testing.T) {
 func TestServeStopsOnContextCancellation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	if err := serve(ctx, &http.Server{Addr: "127.0.0.1:0"}, hub.NewHub()); err != nil {
+	if err := serve(ctx, &http.Server{Addr: "127.0.0.1:0"}, hub.NewHub(), sampleRoute(t)); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -168,7 +169,7 @@ func TestServeReturnsListenError(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer listener.Close()
-	if err := serve(context.Background(), &http.Server{Addr: listener.Addr().String()}, hub.NewHub()); err == nil {
+	if err := serve(context.Background(), &http.Server{Addr: listener.Addr().String()}, hub.NewHub(), sampleRoute(t)); err == nil {
 		t.Fatal("expected listen failure")
 	}
 }
@@ -196,4 +197,13 @@ func TestConnectionsRacingShutdownExit(t *testing.T) {
 	if ctx.Err() != nil {
 		t.Fatal("clients survived shutdown")
 	}
+}
+
+func sampleRoute(t *testing.T) *dummy.Route {
+	t.Helper()
+	r, err := dummy.SampleRoute()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return r
 }

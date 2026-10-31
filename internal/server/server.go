@@ -10,6 +10,7 @@ import (
 	"time"
 
 	mdtv1 "github.com/YukiAminaka/mobility-digital-twin/gen/mdt/v1"
+	"github.com/YukiAminaka/mobility-digital-twin/internal/dummy"
 	"github.com/YukiAminaka/mobility-digital-twin/internal/model/client"
 	"github.com/YukiAminaka/mobility-digital-twin/internal/model/hub"
 	"github.com/coder/websocket"
@@ -52,22 +53,27 @@ func handleWebSocket(h *hub.Hub) gin.HandlerFunc {
 	}
 }
 
-func generateDummyData(ctx context.Context, h *hub.Hub) {
+// dummySpeed は route を周回するダミーの自転車の速度 (km/h)。
+const dummySpeed = 15.0
+
+func generateDummyData(ctx context.Context, h *hub.Hub, route *dummy.Route) {
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
-	var x float64
+	start := time.Now()
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case <-ticker.C:
-			x++
+		case now := <-ticker.C:
+			distance := dummySpeed / 3.6 * now.Sub(start).Seconds()
+			p, heading := route.At(distance)
 			h.Broadcast(&mdtv1.RiderState{
 				RiderId:   "rider-01",
-				Timestamp: time.Now().UnixMilli(),
-				X:         x,
-				Speed:     1,
-				Heading:   90,
+				Timestamp: now.UnixMilli(),
+				Latitude:  p.Lat,
+				Longitude: p.Lon,
+				Speed:     dummySpeed,
+				Heading:   heading,
 			})
 		}
 	}
@@ -76,6 +82,11 @@ func generateDummyData(ctx context.Context, h *hub.Hub) {
 func Run(ctx context.Context) error {
 	ctx, stop := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
+
+	route, err := dummy.SampleRoute()
+	if err != nil {
+		return err
+	}
 
 	h := hub.NewHub()
 
@@ -89,16 +100,16 @@ func Run(ctx context.Context) error {
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
-	return serve(ctx, srv, h)
+	return serve(ctx, srv, h, route)
 }
 
-func serve(ctx context.Context, srv *http.Server, h *hub.Hub) error {
+func serve(ctx context.Context, srv *http.Server, h *hub.Hub, route *dummy.Route) error {
 	producerCtx, stopProducer := context.WithCancel(ctx)
 
 	producerDone := make(chan struct{})
 	go func() {
 		defer close(producerDone)
-		generateDummyData(producerCtx, h)
+		generateDummyData(producerCtx, h, route)
 	}()
 
 	serverErr := make(chan error, 1)

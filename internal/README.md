@@ -3,9 +3,11 @@
 `github.com/coder/websocket` を使用し、`/ws` に接続した Unity などへ
 自転車の状態を Protocol Buffers でシリアライズしたバイナリメッセージとして配信する。
 現在のデータソースは1秒ごとに更新するダミーデータ。
+`internal/dummy/sample.gpx` の経路（PLATEAU でインポートした範囲内の周回コース）を
+15 km/h で周回し、進行方向は走行中の区間の方位とする。GPX はバイナリに埋め込む。
 
 ```text
-generateDummyData(ctx, hub) / 将来の Kinesis Consumer
+generateDummyData(ctx, hub, route) / 将来の Kinesis Consumer
                          │ *mdtv1.RiderState
                          ▼
                   Hub.Broadcast(state)
@@ -29,11 +31,12 @@ generateDummyData(ctx, hub) / 将来の Kinesis Consumer
 |---|---|---|
 | `rider_id` | `string` | 自転車の識別子。例: `rider-01` |
 | `timestamp` | `int64` | Unix ミリ秒 |
-| `x`, `y`, `z` | `double` | Unity 座標系での位置 |
+| `latitude` | `double` | 緯度 |
+| `longitude` | `double` | 経度 |
 | `speed` | `double` | 速度（km/h） |
 | `heading` | `double` | 進行方向（度） |
 
-緯度経度からの座標変換や Kinesis との接続は未実装。
+緯度経度から Unity 座標への変換は Unity 側（PLATEAU SDK）で行う。Kinesis との接続は未実装。
 `Broadcast` した `*mdtv1.RiderState` は全接続で共有するため、渡した後に変更しない。
 
 ## Hub の接続管理
