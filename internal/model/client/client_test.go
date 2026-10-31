@@ -79,13 +79,13 @@ func readState(ctx context.Context, conn *websocket.Conn) (*mdtv1.RiderState, er
 
 func TestLatestStatePerRider(t *testing.T) {
 	c, remote := connectedClient(t)
-	c.Enqueue(&mdtv1.RiderState{RiderId: "a", X: 1})
-	c.Enqueue(&mdtv1.RiderState{RiderId: "b", X: 2})
-	c.Enqueue(&mdtv1.RiderState{RiderId: "a", X: 3})
+	c.Enqueue(&mdtv1.RiderState{RiderId: "a", Latitude: 1})
+	c.Enqueue(&mdtv1.RiderState{RiderId: "b", Latitude: 2})
+	c.Enqueue(&mdtv1.RiderState{RiderId: "a", Latitude: 3})
 	done := startWriter(c)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	for _, want := range []*mdtv1.RiderState{{RiderId: "a", X: 3}, {RiderId: "b", X: 2}} {
+	for _, want := range []*mdtv1.RiderState{{RiderId: "a", Latitude: 3}, {RiderId: "b", Latitude: 2}} {
 		got, err := readState(ctx, remote)
 		if err != nil {
 			t.Fatal(err)
