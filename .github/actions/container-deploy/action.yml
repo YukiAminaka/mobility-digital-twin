@@ -36,3 +36,5 @@ runs:
         cluster: ${{ inputs.ecs-cluster }}
         service: ${{ inputs.ecs-service }}
         task-definition: ${{ steps.render.outputs.task-definition }}
+        wait-for-service-stability: true # サービスが安定するまで待機
+        wait-for-minutes: 10 # ジョブのタイムアウト(15分)内に収まるよう設定
