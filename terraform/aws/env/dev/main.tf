@@ -67,11 +67,9 @@ module "alb" {
   private_subnet_ids        = module.network.private_subnet_ids
 }
 
-module "ecr" {
-  source = "../../modules/ecr"
-
-  project_name = var.project_name
-  repositories = ["websocket"]
+# sharedルートモジュールで作成したECRリポジトリを参照する
+data "aws_ecr_repository" "websocket" {
+  name = "${var.project_name}-websocket"
 }
 
 module "ecs" {
@@ -83,7 +81,7 @@ module "ecs" {
   private_subnet_ids    = module.network.private_subnet_ids
   alb_target_group_arns = module.alb.target_group_arns
   alb_security_group_id = module.alb.alb_security_group_id
-  ecr_repositories      = module.ecr.repository_urls
+  ecr_repositories      = { websocket = data.aws_ecr_repository.websocket.repository_url }
   websocket_image_tag   = var.websocket_image_tag
   kinesis_stream_arn    = module.kinesis_device_data.arn
   kinesis_stream_name   = module.kinesis_device_data.name
@@ -111,7 +109,7 @@ module "github_actions_role" {
   project_name                              = var.project_name
   openid_connect_provider_githubactions_arn = data.aws_iam_openid_connect_provider.github_actions.arn
   github_repository                         = var.github_repository
-  ecr_repositories_arns                     = module.ecr.repository_arns
+  ecr_repositories_arns                     = { websocket = data.aws_ecr_repository.websocket.arn }
   ecs_service_arns                          = [module.ecs.websocket_service_arn]
   ecs_task_execution_role_arn               = module.ecs.task_execution_role_arn
   ecs_task_role_arn                         = module.ecs.task_role_arn

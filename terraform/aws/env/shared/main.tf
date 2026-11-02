@@ -17,7 +17,7 @@ terraform {
 }
 
 provider "aws" {
-  region  = var.aws_region
+  region = var.aws_region
 
   default_tags {
     tags = {
@@ -33,4 +33,11 @@ module "openid_connect_provider" {
   source = "../../modules/openid_connect_provider"
 
   project_name = var.project_name
+}
+
+module "ecr" {
+  source = "../../modules/ecr"
+
+  project_name = var.project_name
+  repositories = ["websocket"]
 }
