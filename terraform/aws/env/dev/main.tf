@@ -100,17 +100,16 @@ module "kinesis_device_data" {
   stream_mode      = "ON_DEMAND"
 }
 
-module "openid_connect_provider" {
-  source = "../../modules/openid_connect_provider"
-
-  project_name = var.project_name
+# sharedルートモジュールで作成したGitHub Actions用のOIDCプロバイダーを参照する
+data "aws_iam_openid_connect_provider" "github_actions" {
+  url = "https://token.actions.githubusercontent.com"
 }
 
 module "github_actions_role" {
   source = "../../modules/github_actions_role"
 
   project_name                              = var.project_name
-  openid_connect_provider_githubactions_arn = module.openid_connect_provider.arn
+  openid_connect_provider_githubactions_arn = data.aws_iam_openid_connect_provider.github_actions.arn
   github_repository                         = var.github_repository
   ecr_repositories_arns                     = module.ecr.repository_arns
   ecs_service_arns                          = [module.ecs.websocket_service_arn]
