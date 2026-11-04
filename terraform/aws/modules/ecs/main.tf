@@ -21,11 +21,8 @@ resource "aws_ecs_task_definition" "websocket" {
   task_role_arn            = aws_iam_role.websocket_task.arn
 
   container_definitions = jsonencode([{
-    name = "websocket"
-    # TODO: Replace this placeholder with the ECR image after the first application image is pushed.
-    # image = "${var.ecr_repositories["websocket"]}:${var.websocket_image_tag}"
-    image   = "docker.io/traefik/whoami:v1.12.0"
-    command = ["--port=8080"]
+    name  = "websocket"
+    image = "${var.ecr_repositories["websocket"]}:${var.websocket_image_tag}"
 
     essential = true
     environment = [
