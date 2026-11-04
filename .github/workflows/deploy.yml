@@ -1,5 +1,26 @@
 name: Deploy
-on: workflow_dispatch
+on: 
+  workflow_dispatch:
+  # push:
+  #   branches: ["main"]
+  #   paths:
+  #     - "cmd/**"
+  #     - "internal/**"
+  #     - "Dockerfile"
+  #     - "go.mod"
+  #     - "go.sum"
+  #     - ".github/workflows/deploy.yml"
+  #     - ".github/actions/**"
+  # pull_request:
+  #   branches: ["main"]
+  #   paths:
+  #     - "cmd/**"
+  #     - "internal/**"
+  #     - "Dockerfile"
+  #     - "go.mod"
+  #     - "go.sum"
+  #     - ".github/workflows/deploy.yml"
+  #     - ".github/actions/**"
 env:
   ROLE_ARN: arn:aws:iam::${{ secrets.AWS_ID }}:role/${{ secrets.ROLE_NAME }}
   SESSION_NAME: gh-oidc-${{ github.run_id }}-${{ github.run_attempt }}
@@ -25,10 +46,12 @@ jobs:
           aws-region: ap-northeast-1
       - uses: ./.github/actions/container-build/ # コンテナイメージのビルド
         id: build
+        if: (github.event_name == 'pull_request' && github.base_ref == 'main') || github.ref == 'refs/heads/main' # mainブランチへのPRまたはmainブランチへのpush時のみ実行
         with:
           ecr-repository-uri: ${{ vars.ECR_REPOSITORY_URI }}
-          dockerfile-path: docker/ecs/
+          dockerfile-path: .
       - uses: ./.github/actions/container-deploy/ # コンテナのデプロイ
+        if: github.ref == 'refs/heads/main' # mainブランチへのpush時のみ実行
         with:
           ecs-cluster: ${{ vars.ECS_CLUSTER_NAME }}
           ecs-service: ${{ vars.ECS_SERVICE_NAME }}
