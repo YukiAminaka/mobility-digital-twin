@@ -9,7 +9,7 @@ SORACOM Funnel
   ↓
 Amazon Kinesis Data Streams
   ↓
-リアルタイム処理サーバ ECS / EC2
+リアルタイム処理サーバ ECS
   ↓ WebSocket
 シミュレータ / Unity + PLATEAU
 ```
@@ -23,7 +23,7 @@ SORACOM Funnel
 Kinesis Data Streams
   高頻度な時系列データを一時的に受ける入口
 
-ECS / EC2
+ECS
   WebSocketサーバを配置
 
 WebSocketサーバ
