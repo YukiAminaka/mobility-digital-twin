@@ -14,13 +14,16 @@ outputs:
 runs:
   using: composite
   steps:
-    - uses: aws-actions/amazon-ecr-login@v2 # Amazon ECRへのログイン
-    - uses: docker/metadata-action@v5 # コンテナイメージのメタデータ生成
+    - name: Amazon ECRへのログイン
+      uses: aws-actions/amazon-ecr-login@v2.1.7
+    - name: コンテナイメージのメタデータ生成
+      uses: docker/metadata-action@v5.10.0
       id: meta
       with:
         images: ${{ inputs.ecr-repository-uri }}
         tags: type=sha,format=long
-    - uses: docker/build-push-action@v6 # コンテナイメージのビルドとプッシュ
+    - name: コンテナイメージのビルドとプッシュ
+      uses: docker/build-push-action@v6.19.2
       with:
         push: true
         context: ${{ inputs.dockerfile-path }}

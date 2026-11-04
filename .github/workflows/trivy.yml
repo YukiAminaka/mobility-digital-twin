@@ -17,9 +17,9 @@ jobs:
       security-events: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
       - name: Run Trivy vulnerability scanner in IaC mode
-        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: config # セキュリティ設定ミスの検出
           scan-ref: "." # カレントディレクトリ(リポジトリ全体)をスキャン

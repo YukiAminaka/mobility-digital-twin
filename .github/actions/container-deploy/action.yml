@@ -25,13 +25,15 @@ runs:
       env:
         TASK_DEFINITION: ${{ inputs.task-definition }}
       shell: bash
-    - uses: aws-actions/amazon-ecs-render-task-definition@v1 # タスク定義の修正
+    - name: タスク定義の修正
+      uses: aws-actions/amazon-ecs-render-task-definition@v1.9.1
       id: render
       with:
         task-definition: ${{ runner.temp }}/task-def.json
         container-name: ${{ inputs.container-name }}
         image: ${{ inputs.container-image }}
-    - uses: aws-actions/amazon-ecs-deploy-task-definition@v1 # ECSサービスの更新
+    - name: ECSサービスの更新
+      uses: aws-actions/amazon-ecs-deploy-task-definition@v1.5.0
       with:
         cluster: ${{ inputs.ecs-cluster }}
         service: ${{ inputs.ecs-service }}
