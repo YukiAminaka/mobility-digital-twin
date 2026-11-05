@@ -7,11 +7,14 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 # Ubuntu のアーカイブは最新リビジョンしか保持しないため、バージョン固定はせず
 # 再現性はベースイメージのタグ固定と soratun の SHA-256 検証で担保する
+# 非rootユーザーでもTUNインターフェースの設定と所有者以外のarc.jsonの読み取りができるよう
+# 必要なケーパビリティだけを setcap で soratun のバイナリに付与する
 # hadolint ignore=DL3008
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         ca-certificates \
         curl \
+        libcap2-bin \
     && SORATUN_VERSION="1.2.8" \
     && SORATUN_TARGETARCH="${TARGETARCH:-$(dpkg --print-architecture)}" \
     && case "${SORATUN_TARGETARCH}/${TARGETVARIANT}" in \
@@ -32,10 +35,17 @@ RUN apt-get update \
     && tar -xzf "/tmp/${SORATUN_ARCHIVE}" -C /tmp/soratun --strip-components=1 \
     && install -m 0755 /tmp/soratun/soratun /usr/local/bin/soratun \
     && soratun version \
+    && setcap cap_net_admin,cap_dac_read_search+ep /usr/local/bin/soratun \
+    && apt-get purge -y --auto-remove libcap2-bin \
     && rm -rf /tmp/soratun "/tmp/${SORATUN_ARCHIVE}" /var/lib/apt/lists/*
+
+# soratunはUAPIソケットを/var/run/wireguardに作成するため、非rootユーザーに書き込み権限を与える
+RUN install -d -o 65532 -g 65532 -m 0755 /var/run/wireguard
 
 COPY entrypoint.sh /usr/local/bin/soratun-entrypoint
 RUN chmod 0755 /usr/local/bin/soratun-entrypoint
+
+USER 65532:65532
 
 ENTRYPOINT ["/usr/local/bin/soratun-entrypoint"]
 CMD ["version"]

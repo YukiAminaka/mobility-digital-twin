@@ -6,10 +6,9 @@ services:
       - ALL
     cap_add:
       - NET_ADMIN
-      - MKNOD
       - DAC_READ_SEARCH
-    device_cgroup_rules:
-      - "c 10:200 rwm"
+    devices:
+      - /dev/net/tun:/dev/net/tun
     volumes:
       - type: bind
         source: ./soratun/arc.json
