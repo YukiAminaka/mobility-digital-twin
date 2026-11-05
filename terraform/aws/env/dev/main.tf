@@ -109,6 +109,7 @@ module "github_actions_role" {
   project_name                              = var.project_name
   openid_connect_provider_githubactions_arn = data.aws_iam_openid_connect_provider.github_actions.arn
   github_repository                         = var.github_repository
+  github_environment                        = var.environment
   ecr_repositories_arns                     = { websocket = data.aws_ecr_repository.websocket.arn }
   ecs_service_arns                          = [module.ecs.websocket_service_arn]
   ecs_task_execution_role_arn               = module.ecs.task_execution_role_arn

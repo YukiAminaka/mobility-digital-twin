@@ -13,6 +13,11 @@ variable "github_repository" {
   description = "The GitHub repository in the format 'owner/repo' for which the OIDC provider is being created."
 }
 
+variable "github_environment" {
+  type        = string
+  description = "The GitHub Actions environment name allowed to assume the role."
+}
+
 variable "ecr_repositories_arns" {
   type        = map(string)
   description = "A map of ECR repository ARNs."
