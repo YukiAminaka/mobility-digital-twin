@@ -15,12 +15,11 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o server ./cmd/websocket-server
 
 
 
-FROM gcr.io/distroless/static-debian13
+FROM gcr.io/distroless/static-debian13:nonroot
 
 WORKDIR /app
 
-# distrolessでは65532が非rootユーザーとして推奨されている
-USER 65532
+USER nonroot:nonroot
 
 # builderからビルド成果物だけコピー
 COPY --from=builder /app/server .
