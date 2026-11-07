@@ -14,9 +14,10 @@ jobs:
     timeout-minutes: 10 # タイムアウト
     permissions:
       contents: read
-      pull-requests: write
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
       - uses: hadolint/hadolint-action@v3.3.0
         with:
           recursive: true

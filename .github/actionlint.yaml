@@ -1,0 +1,5 @@
+paths:
+  .github/workflows/**/*.{yml,yaml}:
+    ignore:
+      # gh actions-lock の同一リポジトリ参照 (uses: $/...) を actionlint が未対応のため無視
+      - 'specifying action "\$/.+" in invalid format because ref is missing'
