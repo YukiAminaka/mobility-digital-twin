@@ -14,7 +14,6 @@ jobs:
     timeout-minutes: 5 # タイムアウト
     permissions:
       contents: read
-      pull-requests: write
     steps:
       - uses: actions/checkout@v7.0.1
       - run: | # 静的解析の実行
