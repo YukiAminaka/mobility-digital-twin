@@ -40,6 +40,16 @@ data "aws_iam_policy_document" "route53_parent_zone_access" {
       "arn:aws:route53:::hostedzone/${var.parent_zone_id}",
     ]
   }
+
+  statement {
+    sid     = "WaitForRecordChangeSync"
+    effect  = "Allow"
+    actions = ["route53:GetChange"]
+
+    resources = [
+      "arn:aws:route53:::change/*",
+    ]
+  }
 }
 
 resource "aws_iam_role_policy" "route53_parent_zone_access" {
