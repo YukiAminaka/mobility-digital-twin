@@ -58,7 +58,7 @@ jobs:
         # env/devをdestroyしている間はクラスターやDescribeServicesの権限が無くエラーになるため、エラーも「存在しない」とみなす
         run: |
           count=$(aws ecs describe-services --cluster "${ECS_CLUSTER}" --services "${ECS_SERVICE}" \
-            --query 'length(services[?status==`ACTIVE`])' --output text 2>/dev/null || echo 0)
+            --query "length(services[?status=='ACTIVE'])" --output text 2>/dev/null || echo 0)
           echo "exists=$([ "${count}" = "1" ] && echo true || echo false)" >> "${GITHUB_OUTPUT}"
         env:
           ECS_CLUSTER: ${{ vars.ECS_CLUSTER_NAME }}
