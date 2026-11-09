@@ -13,3 +13,9 @@ variable "environment" {
   description = "Environment name"
   type        = string
 }
+variable "github_repository" {
+  description = "GitHub repository in 'owner/repo' format allowed to assume the GitHub Actions role"
+  type        = string
+  default     = "YukiAminaka/mobility-digital-twin"
+}
+

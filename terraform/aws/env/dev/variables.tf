@@ -56,9 +56,3 @@ variable "soracom_aws_account_id" {
   type        = string
   default     = "762707677580"
 }
-
-variable "github_repository" {
-  description = "GitHub repository in 'owner/repo' format allowed to assume the GitHub Actions role"
-  type        = string
-  default     = "YukiAminaka/mobility-digital-twin"
-}

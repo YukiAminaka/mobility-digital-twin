@@ -98,23 +98,16 @@ module "kinesis_device_data" {
   stream_mode      = "ON_DEMAND"
 }
 
-# sharedルートモジュールで作成したGitHub Actions用のOIDCプロバイダーを参照する
-data "aws_iam_openid_connect_provider" "github_actions" {
-  url = "https://token.actions.githubusercontent.com"
+module "github_actions_ecs_deploy_policy" {
+  source = "../../modules/github_actions_ecs_deploy_policy"
+
+  project_name                = var.project_name
+  environment                 = var.environment
+  ecs_service_arns            = [module.ecs.websocket_service_arn]
+  ecs_task_execution_role_arn = module.ecs.task_execution_role_arn
+  ecs_task_role_arn           = module.ecs.task_role_arn
 }
 
-module "github_actions_role" {
-  source = "../../modules/github_actions_role"
-
-  project_name                              = var.project_name
-  openid_connect_provider_githubactions_arn = data.aws_iam_openid_connect_provider.github_actions.arn
-  github_repository                         = var.github_repository
-  github_environment                        = var.environment
-  ecr_repositories_arns                     = { websocket = data.aws_ecr_repository.websocket.arn }
-  ecs_service_arns                          = [module.ecs.websocket_service_arn]
-  ecs_task_execution_role_arn               = module.ecs.task_execution_role_arn
-  ecs_task_role_arn                         = module.ecs.task_role_arn
-}
 
 module "ssm_bastion" {
   source = "../../modules/ssm_bastion"

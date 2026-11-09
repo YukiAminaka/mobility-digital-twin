@@ -13,27 +13,12 @@ variable "github_repository" {
   description = "The GitHub repository in the format 'owner/repo' allowed to assume the role."
 }
 
-variable "github_environment" {
+variable "environment" {
   type        = string
-  description = "The GitHub Actions environment name allowed to assume the role."
+  description = "Environment name. Also used as the GitHub Actions environment name allowed to assume the role."
 }
 
 variable "ecr_repositories_arns" {
   type        = map(string)
   description = "A map of ECR repository ARNs."
-}
-
-variable "ecs_service_arns" {
-  type        = list(string)
-  description = "List of ECS service ARNs that the GitHub Actions role will have access to."
-}
-
-variable "ecs_task_execution_role_arn" {
-  type        = string
-  description = "ARN of the ECS task execution role that the GitHub Actions role is allowed to pass to ECS."
-}
-
-variable "ecs_task_role_arn" {
-  type        = string
-  description = "ARN of the ECS task role that the GitHub Actions role is allowed to pass to ECS."
 }

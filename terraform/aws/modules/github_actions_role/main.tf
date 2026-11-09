@@ -3,11 +3,11 @@
 # ============================================================
 
 resource "aws_iam_role" "github_actions" {
-  name               = "${var.project_name}-githubactions-role"
+  name               = "${var.project_name}-${var.environment}-githubactions-role"
   assume_role_policy = data.aws_iam_policy_document.github_actions_assume_role_policy.json
 
   tags = {
-    Name    = "${var.project_name}-githubactions-role"
+    Name    = "${var.project_name}-${var.environment}-githubactions-role"
     Project = var.project_name
   }
 }
@@ -39,18 +39,18 @@ data "aws_iam_policy_document" "github_actions_assume_role_policy" {
       variable = "token.actions.githubusercontent.com:sub"
 
       values = [
-        "repo:${var.github_repository}:environment:${var.github_environment}"
+        "repo:${var.github_repository}:environment:${var.environment}"
       ]
     }
   }
 }
 
-resource "aws_iam_policy" "github_actions_deploy" {
-  name   = "${var.project_name}-github-actions-deploy-policy"
-  policy = data.aws_iam_policy_document.github_actions_deploy.json
+resource "aws_iam_policy" "github_actions_ecr_push" {
+  name   = "${var.project_name}-${var.environment}-github-actions-ecr-push-policy"
+  policy = data.aws_iam_policy_document.github_actions_ecr_push.json
 }
 
-data "aws_iam_policy_document" "github_actions_deploy" {
+data "aws_iam_policy_document" "github_actions_ecr_push" {
   statement {
     sid = "ECRAuthorization"
     actions = [
@@ -75,54 +75,9 @@ data "aws_iam_policy_document" "github_actions_deploy" {
       for repo_arn in var.ecr_repositories_arns : repo_arn
     ]
   }
-
-  statement {
-    sid = "DescribeTaskDefinition"
-    actions = [
-      "ecs:DescribeTaskDefinition",
-    ]
-    resources = ["*"]
-  }
-
-  statement {
-    sid = "RegisterTaskDefinition"
-    actions = [
-      "ecs:RegisterTaskDefinition"
-    ]
-    resources = ["*"]
-  }
-
-  statement {
-    sid    = "UpdateService"
-    effect = "Allow"
-    actions = [
-      "ecs:UpdateService",
-      "ecs:DescribeServices",
-    ]
-    resources = [
-      for service_arn in var.ecs_service_arns : service_arn
-    ]
-  }
-
-  statement {
-    sid    = "PassRole"
-    effect = "Allow"
-    actions = [
-      "iam:PassRole",
-    ]
-    resources = [
-      var.ecs_task_execution_role_arn,
-      var.ecs_task_role_arn,
-    ]
-    condition {
-      test     = "StringLike"
-      variable = "iam:PassedToService"
-      values   = ["ecs-tasks.amazonaws.com"]
-    }
-  }
 }
 
-resource "aws_iam_role_policy_attachment" "github_actions_deploy" {
+resource "aws_iam_role_policy_attachment" "github_actions_ecr_push" {
   role       = aws_iam_role.github_actions.name
-  policy_arn = aws_iam_policy.github_actions_deploy.arn
+  policy_arn = aws_iam_policy.github_actions_ecr_push.arn
 }

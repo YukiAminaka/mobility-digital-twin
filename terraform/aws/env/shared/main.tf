@@ -41,3 +41,13 @@ module "ecr" {
   project_name = var.project_name
   repositories = ["websocket"]
 }
+
+module "github_actions_dev_role" {
+  source = "../../modules/github_actions_role"
+
+  project_name                              = var.project_name
+  openid_connect_provider_githubactions_arn = module.openid_connect_provider.arn
+  github_repository                         = var.github_repository
+  environment                               = "dev"
+  ecr_repositories_arns                     = module.ecr.repository_arns
+}
