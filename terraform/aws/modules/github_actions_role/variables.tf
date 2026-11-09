@@ -10,7 +10,7 @@ variable "openid_connect_provider_githubactions_arn" {
 
 variable "github_repository" {
   type        = string
-  description = "The GitHub repository in the format 'owner/repo' for which the OIDC provider is being created."
+  description = "The GitHub repository in the format 'owner/repo' allowed to assume the role."
 }
 
 variable "github_environment" {
