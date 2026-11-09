@@ -15,9 +15,37 @@ gps-sender container
 
 - Linux上でDocker EngineとDocker Composeが利用できること
 - ホストのLinuxカーネルでTUN/TAPが利用できること
+- ホストの `/dev/net/tun` をUID 65532から読み書きできること（[TUNデバイスの権限を確認する](#tunデバイスの権限を確認する)）
 - SORACOM ArcのバーチャルSIM/Subscriberを作成済みであること
 - バーチャルSIM/Subscriberが所属するグループでSORACOM Funnelが有効であること
 - Funnelの送信データ形式がJSONに設定されていること
+
+### TUNデバイスの権限を確認する
+
+`soratun` コンテナは非rootユーザー（UID 65532）で実行され、ホストの `/dev/net/tun` をそのままコンテナに渡して使います。コンテナ内のデバイスノードはホストのモードと所有者を引き継ぐため、ホスト側でUID 65532が読み書きできる必要があります。
+
+```bash
+ls -l /dev/net/tun
+```
+
+多くのディストリビューションでは、systemdの既定のudevルールにより `crw-rw-rw-`（`0666`）になっています。この場合は追加の設定は不要です。
+
+`crw-------` など、UID 65532が読み書きできないモードになっている場合は、udevルールでモードを設定します。TUNインターフェースの作成には別途 `CAP_NET_ADMIN` が必要なため、`0666` はsystemdの既定と同じ設定です。
+
+```bash
+echo 'KERNEL=="tun", MODE="0666"' | sudo tee /etc/udev/rules.d/99-tun.rules
+sudo udevadm control --reload
+sudo udevadm trigger --action=add --sysname-match=tun
+ls -l /dev/net/tun
+```
+
+モードが変わらない場合はホストを再起動してください。`setfacl` などのACLだけで許可しても、コンテナ内のデバイスノードには反映されません。
+
+設定を変更する前に作成したコンテナには古い権限のデバイスノードが残るため、コンテナを再作成してください。
+
+```bash
+docker compose up -d --force-recreate
+```
 
 ### Arc設定ファイルを配置する
 
