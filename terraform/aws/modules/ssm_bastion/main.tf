@@ -121,7 +121,13 @@ data "aws_iam_policy_document" "developer_start_session" {
       "ssm:ResumeSession",
     ]
 
-    resources = ["arn:aws:ssm:*:*:session/$${aws:username}-*"]
+    resources = ["arn:aws:ssm:*:*:session/*"]
+
+    condition {
+      test     = "StringEquals"
+      variable = "ssm:resourceTag/aws:ssmmessages:session-id"
+      values   = ["$${aws:userid}"]
+    }
   }
 
   statement {
