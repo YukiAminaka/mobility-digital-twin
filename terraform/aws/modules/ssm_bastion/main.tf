@@ -119,6 +119,7 @@ data "aws_iam_policy_document" "developer_start_session" {
     actions = [
       "ssm:TerminateSession",
       "ssm:ResumeSession",
+      "ssmmessages:OpenDataChannel",
     ]
 
     resources = ["arn:aws:ssm:*:*:session/*"]
