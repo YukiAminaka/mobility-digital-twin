@@ -53,9 +53,19 @@ jobs:
         with:
           ecr-repository-uri: ${{ vars.ECR_REPOSITORY_URI }}
           dockerfile-path: .
+      - name: ECSサービスの存在確認
+        id: describe
+        # env/devをdestroyしている間はクラスターやDescribeServicesの権限が無くエラーになるため、エラーも「存在しない」とみなす
+        run: |
+          count=$(aws ecs describe-services --cluster "${ECS_CLUSTER}" --services "${ECS_SERVICE}" \
+            --query 'length(services[?status==`ACTIVE`])' --output text 2>/dev/null || echo 0)
+          echo "exists=$([ "${count}" = "1" ] && echo true || echo false)" >> "${GITHUB_OUTPUT}"
+        env:
+          ECS_CLUSTER: ${{ vars.ECS_CLUSTER_NAME }}
+          ECS_SERVICE: ${{ vars.ECS_SERVICE_NAME }}
       - name: コンテナのデプロイ
         uses: $/.github/actions/container-deploy/
-        if: github.ref == 'refs/heads/main' # mainブランチへのpush時のみ実行
+        if: github.ref == 'refs/heads/main' && steps.describe.outputs.exists == 'true' # mainブランチへのpush時かつECSサービスが存在する時のみ実行
         with:
           ecs-cluster: ${{ vars.ECS_CLUSTER_NAME }}
           ecs-service: ${{ vars.ECS_SERVICE_NAME }}
