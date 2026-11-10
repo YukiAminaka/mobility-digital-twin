@@ -1,26 +1,28 @@
 name: Deploy
 on: 
   workflow_dispatch:
-  # push:
-  #   branches: ["main"]
-  #   paths:
-  #     - "cmd/**"
-  #     - "internal/**"
-  #     - "Dockerfile"
-  #     - "go.mod"
-  #     - "go.sum"
-  #     - ".github/workflows/deploy.yml"
-  #     - ".github/actions/**"
-  # pull_request:
-  #   branches: ["main"]
-  #   paths:
-  #     - "cmd/**"
-  #     - "internal/**"
-  #     - "Dockerfile"
-  #     - "go.mod"
-  #     - "go.sum"
-  #     - ".github/workflows/deploy.yml"
-  #     - ".github/actions/**"
+  push:
+    branches: ["main"]
+    paths:
+      - "cmd/**"
+      - "internal/**"
+      - "gen/**"
+      - "Dockerfile"
+      - "go.mod"
+      - "go.sum"
+      - ".github/workflows/deploy.yml"
+      - ".github/actions/**"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "cmd/**"
+      - "internal/**"
+      - "gen/**"
+      - "Dockerfile"
+      - "go.mod"
+      - "go.sum"
+      - ".github/workflows/deploy.yml"
+      - ".github/actions/**"
 env:
   ROLE_ARN: arn:aws:iam::${{ secrets.AWS_ID }}:role/${{ secrets.ROLE_NAME }}
   SESSION_NAME: gh-oidc-${{ github.run_id }}-${{ github.run_attempt }}
@@ -49,7 +51,8 @@ jobs:
       - name: コンテナイメージのビルド
         uses: $/.github/actions/container-build/
         id: build
-        if: (github.event_name == 'pull_request' && github.base_ref == 'main') || github.ref == 'refs/heads/main' # mainブランチへのPRまたはmainブランチへのpush時のみ実行
+        # mainブランチへのPR,mainブランチへのpush,mainブランチでの手動実行時のみ実行
+        if: (github.event_name == 'pull_request' && github.base_ref == 'main') || github.ref == 'refs/heads/main'
         with:
           ecr-repository-uri: ${{ vars.ECR_REPOSITORY_URI }}
           dockerfile-path: .
@@ -77,7 +80,8 @@ jobs:
           ECS_SERVICE: ${{ vars.ECS_SERVICE_NAME }}
       - name: コンテナのデプロイ
         uses: $/.github/actions/container-deploy/
-        if: github.ref == 'refs/heads/main' && steps.describe.outputs.exists == 'true' # mainブランチへのpush時かつECSサービスが存在する時のみ実行
+        # mainブランチへのpushまたはmainブランチでの手動実行時でECSサービスが存在する時のみ実行
+        if: github.ref == 'refs/heads/main' && steps.describe.outputs.exists == 'true'
         with:
           ecs-cluster: ${{ vars.ECS_CLUSTER_NAME }}
           ecs-service: ${{ vars.ECS_SERVICE_NAME }}
