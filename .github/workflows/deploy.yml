@@ -55,10 +55,22 @@ jobs:
           dockerfile-path: .
       - name: ECSサービスの存在確認
         id: describe
-        # env/devをdestroyしている間はクラスターやDescribeServicesの権限が無くエラーになるため、エラーも「存在しない」とみなす
+        # env/devをdestroyしている間はクラスターやDescribeServicesの権限が無くエラーになるため、想定内のエラーのみ「存在しない」とみなし、それ以外のエラーは失敗させる
         run: |
-          count=$(aws ecs describe-services --cluster "${ECS_CLUSTER}" --services "${ECS_SERVICE}" \
-            --query "length(services[?status=='ACTIVE'])" --output text 2>/dev/null || echo 0)
+          err="${RUNNER_TEMP}/describe-services.err"
+          if count=$(aws ecs describe-services --cluster "${ECS_CLUSTER}" --services "${ECS_SERVICE}" \
+              --query "length(services[?status=='ACTIVE'])" --output text 2>"${err}"); then
+            :
+          elif grep -qE 'AccessDeniedException|ClusterNotFoundException' "${err}"; then
+            echo "::warning::ECSサービスを参照できないためデプロイをスキップします: $(cat "${err}")"
+            count=0
+          else
+            cat "${err}" >&2
+            exit 1
+          fi
+          if [ "${count}" != "1" ]; then
+            echo "::warning::ACTIVEなECSサービスが見つからないためデプロイをスキップします"
+          fi
           echo "exists=$([ "${count}" = "1" ] && echo true || echo false)" >> "${GITHUB_OUTPUT}"
         env:
           ECS_CLUSTER: ${{ vars.ECS_CLUSTER_NAME }}
