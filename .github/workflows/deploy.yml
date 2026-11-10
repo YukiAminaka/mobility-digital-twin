@@ -32,7 +32,25 @@ concurrency: # 多重実行の防止
   cancel-in-progress: ${{ github.event_name == 'pull_request' }} # PRのみキャンセル可
 
 jobs:
+  build-check:
+    # deployment protection rulesでmainブランチのみdev環境向けにデプロイワークフローを起動できるため、PRではECRへプッシュせずビルドのみ確認する
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - name: コンテナイメージのビルド
+        uses: docker/build-push-action@v6.19.2
+        with:
+          push: false
+          context: .
+
   deploy:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment: dev
     timeout-minutes: 15
@@ -51,8 +69,6 @@ jobs:
       - name: コンテナイメージのビルド
         uses: $/.github/actions/container-build/
         id: build
-        # mainブランチへのPR,mainブランチへのpush,mainブランチでの手動実行時のみ実行
-        if: (github.event_name == 'pull_request' && github.base_ref == 'main') || github.ref == 'refs/heads/main'
         with:
           ecr-repository-uri: ${{ vars.ECR_REPOSITORY_URI }}
           dockerfile-path: .
@@ -80,8 +96,8 @@ jobs:
           ECS_SERVICE: ${{ vars.ECS_SERVICE_NAME }}
       - name: コンテナのデプロイ
         uses: $/.github/actions/container-deploy/
-        # mainブランチへのpushまたはmainブランチでの手動実行時でECSサービスが存在する時のみ実行
-        if: github.ref == 'refs/heads/main' && steps.describe.outputs.exists == 'true'
+        # ECSサービスが存在する時のみ実行
+        if: steps.describe.outputs.exists == 'true'
         with:
           ecs-cluster: ${{ vars.ECS_CLUSTER_NAME }}
           ecs-service: ${{ vars.ECS_SERVICE_NAME }}
