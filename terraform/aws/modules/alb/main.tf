@@ -151,6 +151,7 @@ resource "aws_vpc_security_group_ingress_rule" "alb_http" {
   to_port                      = 80
   ip_protocol                  = "tcp"
   referenced_security_group_id = var.bastion_security_group_id
+  description                  = "Allow HTTP from SSM bastion"
 }
 
 # httpsの通信を許可するIngressルール(internal ALBのためSSM踏み台からのみ許可)
@@ -160,6 +161,7 @@ resource "aws_vpc_security_group_ingress_rule" "alb_https" {
   to_port                      = 443
   ip_protocol                  = "tcp"
   referenced_security_group_id = var.bastion_security_group_id
+  description                  = "Allow HTTPS from SSM bastion"
 }
 
 # ALBのegressルールは循環参照回避のためルートモジュールで定義
