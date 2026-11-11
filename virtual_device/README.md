@@ -36,6 +36,7 @@ ls -l /dev/net/tun
 echo 'KERNEL=="tun", MODE="0666"' | sudo tee /etc/udev/rules.d/99-tun.rules
 sudo udevadm control --reload
 sudo udevadm trigger --action=add --sysname-match=tun
+sudo udevadm settle
 ls -l /dev/net/tun
 ```
 
