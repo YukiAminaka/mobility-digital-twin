@@ -41,9 +41,12 @@ ls -l /dev/net/tun
 
 モードが変わらない場合はホストを再起動してください。`setfacl` などのACLだけで許可しても、コンテナ内のデバイスノードには反映されません。
 
-設定を変更する前に作成したコンテナには古い権限のデバイスノードが残るため、コンテナを再作成してください。
+初回セットアップの場合は、このまま[Arc設定ファイルを配置する](#arc設定ファイルを配置する)に進んでください。コンテナは[仮想デバイスを起動する](#仮想デバイスを起動する)で新しく作成されます。
+
+すでにArcを設定してコンテナを作成済みの場合は、古い権限のデバイスノードが残っています。コンテナを再作成してください。
 
 ```bash
+cd virtual_device
 docker compose up -d --force-recreate
 ```
 
@@ -56,6 +59,8 @@ cd virtual_device
 cp soratun/arc.json.sample soratun/arc.json
 chmod 600 soratun/arc.json
 ```
+
+`arc.json` がない状態で `docker compose up` を実行すると、`bind source path does not exist` というエラーで起動が止まります。その場合は上記の手順で `arc.json` を作成してください。
 
 `arc.json` の `arcAllowedIPs` は、Funnelのエントリポイントが属する `100.127.0.0/16` をカバーしている必要があります。ユーザーコンソールが出力する設定では、この範囲が複数のCIDRに分割される場合があります。ユーザーコンソールが出力した値を優先し、秘密鍵を含む `arc.json` はGitにコミットしないでください。
 
