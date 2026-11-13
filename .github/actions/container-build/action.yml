@@ -1,0 +1,43 @@
+name: Container Build
+description: コンテナイメージをビルドし、ECRへプッシュします。
+inputs:
+  ecr-repository-uri:
+    required: true
+    description: ECRリポジトリのURI
+  dockerfile-path:
+    required: true
+    description: Dockerfileのパス
+outputs:
+  container-image:
+    value: ${{ steps.meta.outputs.tags }}
+    description: ビルドしたコンテナイメージ
+runs:
+  using: composite
+  steps:
+    - name: Amazon ECRへのログイン
+      uses: aws-actions/amazon-ecr-login@v2.1.7
+    - name: コンテナイメージのメタデータ生成
+      uses: docker/metadata-action@v5.10.0
+      id: meta
+      with:
+        images: ${{ inputs.ecr-repository-uri }}
+        tags: type=sha,format=long
+    - name: 同じタグのイメージの存在確認
+      id: exists
+      # ECRのイメージタグがイミュータブルのため、同じコミットを再実行した場合はプッシュが失敗する。既存イメージがあれば再利用する
+      run: |
+        count=$(aws ecr batch-get-image --repository-name "${ECR_REPOSITORY_URI#*/}" \
+          --image-ids imageTag="${IMAGE_TAG}" --query "length(images)" --output text)
+        echo "exists=$([ "${count}" -gt 0 ] && echo true || echo false)" >> "${GITHUB_OUTPUT}"
+      env:
+        ECR_REPOSITORY_URI: ${{ inputs.ecr-repository-uri }}
+        IMAGE_TAG: ${{ steps.meta.outputs.version }}
+      shell: bash
+    - name: コンテナイメージのビルドとプッシュ
+      uses: docker/build-push-action@v6.19.2
+      if: steps.exists.outputs.exists != 'true' # 既存イメージが無い場合のみ実行
+      with:
+        push: true
+        context: ${{ inputs.dockerfile-path }}
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}

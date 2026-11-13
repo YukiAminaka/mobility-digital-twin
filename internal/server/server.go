@@ -90,9 +90,18 @@ func Run(ctx context.Context) error {
 
 	h := hub.NewHub()
 
-	router := gin.Default()
+	router := gin.New()
+
+	// ログ出力の設定。/healthz へのアクセスはログに出力しないようにする。
+	loggerConfig := gin.LoggerConfig{SkipPaths: []string{"/healthz"}}
+
+	router.Use(gin.LoggerWithConfig(loggerConfig))
+	router.Use(gin.Recovery())
 
 	router.GET("/ws", handleWebSocket(h))
+	router.GET("/healthz", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
 
 	srv := &http.Server{
 		Addr:              ":8080",

@@ -6,15 +6,16 @@ services:
       - ALL
     cap_add:
       - NET_ADMIN
-      - MKNOD
       - DAC_READ_SEARCH
-    device_cgroup_rules:
-      - "c 10:200 rwm"
+    devices:
+      - /dev/net/tun:/dev/net/tun
     volumes:
       - type: bind
         source: ./soratun/arc.json
         target: /run/secrets/arc.json
         read_only: true
+        bind:
+          create_host_path: false
     command: ["up", "--config", "/run/secrets/arc.json"]
     restart: unless-stopped
     stop_grace_period: 10s

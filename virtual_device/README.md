@@ -15,9 +15,46 @@ gps-sender container
 
 - Linux上でDocker EngineとDocker Composeが利用できること
 - ホストのLinuxカーネルでTUN/TAPが利用できること
+- ホストの `/dev/net/tun` をUID 65532から読み書きできること（[TUNデバイスの権限を確認する](#tunデバイスの権限を確認する)）
 - SORACOM ArcのバーチャルSIM/Subscriberを作成済みであること
 - バーチャルSIM/Subscriberが所属するグループでSORACOM Funnelが有効であること
 - Funnelの送信データ形式がJSONに設定されていること
+
+### TUNデバイスの権限を確認する
+
+`soratun` コンテナは非rootユーザー（UID 65532）で実行され、ホストの `/dev/net/tun` をそのままコンテナに渡して使います。コンテナ内のデバイスノードはホストのモードと所有者を引き継ぐため、ホスト側でUID 65532が読み書きできる必要があります。
+
+```bash
+ls -l /dev/net/tun
+```
+
+多くのディストリビューションでは、systemdの既定のudevルールにより `crw-rw-rw-`（`0666`）になっています。
+
+`crw-------` など、UID 65532が読み書きできないモードになっている場合は、udevルールでモードを設定します。
+
+```bash
+echo 'KERNEL=="tun", MODE="0666"' | sudo tee /etc/udev/rules.d/99-tun.rules
+sudo udevadm control --reload
+sudo udevadm trigger --action=add --sysname-match=tun
+sudo udevadm settle
+ls -l /dev/net/tun
+```
+
+モードが変わらない場合はホストを再起動してください。`setfacl` などのACLだけで許可しても、コンテナ内のデバイスノードには反映されません。
+
+> [!NOTE]
+> この手順は、ホストを単一ユーザーで使う前提です。CVE-2026-99281が未修正のカーネルでは、`/dev/net/tun` を開けるローカルユーザーなら誰でも、所有者・グループが設定されていない永続TUN/TAPデバイスに接続できます。`soratun` のインターフェースはコンテナ内にあり、永続化もされないため影響を受けません。ほかのユーザーがいるホストで使う場合は、`uname -r` と `ip -d tuntap show` で状況を確認し、カーネルを更新してください。
+>
+> 上流カーネルの修正版は系列ごとに異なり、6.12系は6.12.117以降、6.18系は6.18.61以降、7.3系は7.3.2以降、7.4系は7.4-rc1以降はすべて修正済みです。それ以外の系列には上流の修正がありません。最新の修正状況は[CVE-2026-99281](https://www.cve.org/CVERecord?id=CVE-2026-99281)を参照してください。ディストリビューションのカーネルは独自のバージョン番号で修正を取り込むため、各ディストリビューションのセキュリティ情報でバックポートの有無を含む対応状況を確認してください。
+
+初回セットアップの場合は、このまま[Arc設定ファイルを配置する](#arc設定ファイルを配置する)に進んでください。コンテナは[仮想デバイスを起動する](#仮想デバイスを起動する)で新しく作成されます。
+
+すでにArcを設定してコンテナを作成済みの場合は、古い権限のデバイスノードが残っています。コンテナを再作成してください。
+
+```bash
+cd virtual_device
+docker compose up -d --force-recreate
+```
 
 ### Arc設定ファイルを配置する
 
@@ -28,6 +65,8 @@ cd virtual_device
 cp soratun/arc.json.sample soratun/arc.json
 chmod 600 soratun/arc.json
 ```
+
+`arc.json` がない状態で `docker compose up` を実行すると、`bind source path does not exist` というエラーで起動が止まります。その場合は上記の手順で `arc.json` を作成してください。
 
 `arc.json` の `arcAllowedIPs` は、Funnelのエントリポイントが属する `100.127.0.0/16` をカバーしている必要があります。ユーザーコンソールが出力する設定では、この範囲が複数のCIDRに分割される場合があります。ユーザーコンソールが出力した値を優先し、秘密鍵を含む `arc.json` はGitにコミットしないでください。
 
