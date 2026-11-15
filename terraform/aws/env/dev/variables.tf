@@ -50,9 +50,3 @@ variable "soracom_external_id" {
   type        = string
   sensitive   = true
 }
-
-variable "soracom_aws_account_id" {
-  description = "SORACOM's AWS Account ID"
-  type        = string
-  default     = "762707677580"
-}

@@ -1,3 +1,7 @@
+locals {
+  soracom_aws_account_id = "762707677580"
+}
+
 data "aws_iam_policy_document" "soracom_funnel_assume_role" {
   statement {
     sid    = "AllowSoracomFunnelAssumeRole"
@@ -11,7 +15,7 @@ data "aws_iam_policy_document" "soracom_funnel_assume_role" {
       type = "AWS"
 
       identifiers = [
-        "arn:aws:iam::${var.soracom_aws_account_id}:root"
+        "arn:aws:iam::${local.soracom_aws_account_id}:root"
       ]
     }
 
@@ -26,13 +30,13 @@ data "aws_iam_policy_document" "soracom_funnel_assume_role" {
   }
 }
 
-resource "aws_iam_role" "soracom_funnel" {
-  name = "${var.project_name}-${var.environment}-soracom-funnel-role"
+resource "aws_iam_role" "soracom_funnel_kinesis" {
+  name = "${var.project_name}-${var.environment}-soracom-funnel-kinesis-role"
 
   assume_role_policy = sensitive(data.aws_iam_policy_document.soracom_funnel_assume_role.json)
 
   tags = {
-    Name        = "${var.project_name}-${var.environment}-soracom-funnel-role"
+    Name        = "${var.project_name}-${var.environment}-soracom-funnel-kinesis-role"
     Project     = var.project_name
     Environment = var.environment
   }
@@ -63,6 +67,6 @@ resource "aws_iam_policy" "kinesis_write" {
 
 # kinesisへの書き込みを許可するポリシーをアタッチ
 resource "aws_iam_role_policy_attachment" "kinesis_write" {
-  role       = aws_iam_role.soracom_funnel.name
+  role       = aws_iam_role.soracom_funnel_kinesis.name
   policy_arn = aws_iam_policy.kinesis_write.arn
 }

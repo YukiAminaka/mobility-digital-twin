@@ -123,9 +123,8 @@ module "soracom_funnel_iam" {
   environment  = var.environment
   source       = "../../modules/soracom_funnel_iam"
 
-  kinesis_stream_arn     = module.kinesis_device_data.arn
-  external_id            = var.soracom_external_id
-  soracom_aws_account_id = var.soracom_aws_account_id
+  kinesis_stream_arn = module.kinesis_device_data.arn
+  external_id        = var.soracom_external_id
 }
 
 # ============================================================
