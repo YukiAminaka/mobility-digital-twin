@@ -89,6 +89,14 @@ module "ecs" {
   depends_on = [module.alb]
 }
 
+module "iot" {
+  source = "../../modules/iot"
+
+  project_name = var.project_name
+  environment  = var.environment
+  external_id  = var.soracom_funnel_iot_external_id
+}
+
 module "kinesis_device_data" {
   project_name = var.project_name
   environment  = var.environment
@@ -124,7 +132,7 @@ module "soracom_funnel_kinesis_role" {
   source       = "../../modules/soracom_funnel_kinesis_role"
 
   kinesis_stream_arn = module.kinesis_device_data.arn
-  external_id        = var.soracom_external_id
+  external_id        = var.soracom_funnel_kinesis_external_id
 }
 
 # ============================================================

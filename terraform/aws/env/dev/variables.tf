@@ -45,7 +45,13 @@ variable "websocket_image_tag" {
   type        = string
 }
 
-variable "soracom_external_id" {
+variable "soracom_funnel_iot_external_id" {
+  description = "External ID to register in SORACOM credential store"
+  type        = string
+  sensitive   = true
+}
+
+variable "soracom_funnel_kinesis_external_id" {
   description = "External ID to register in SORACOM credential store"
   type        = string
   sensitive   = true
